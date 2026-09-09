@@ -654,3 +654,52 @@ test("visitor work is capped per fingerprint and never touches the company", asy
   const tooShort = await engine.visitorTask({ brief: "kısa", ip: "203.0.113.10" });
   assert.equal(tooShort.error, "short");
 });
+
+test("visitor answers always carry the real employees, never invented ones", async (t) => {
+  const engine = engineFor(t, {
+    apiKey: "test-secret-not-real",
+    fetchImpl: async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        usage: { input_tokens: 300, output_tokens: 200 },
+        output: [
+          {
+            type: "message",
+            content: [
+              {
+                type: "output_text",
+                text: JSON.stringify({
+                  ok: true,
+                  title: "Bekleme süresini kısaltma planı",
+                  summary: "İki haftalık ölçümle tek değişkenli bir deneme.",
+                  notes: [
+                    { role: "Ayşe · Uydurma Rol", note: "Sipariş sürelerini kaydet." },
+                    { role: "Murat · Uydurma Rol", note: "Hazırlık listesi çıkar." },
+                    { role: "Elif · Uydurma Rol", note: "Girişte bekleyeni say." },
+                  ],
+                  deliverable:
+                    "# Plan\n\nBu bir simülasyon çıktısıdır. Bir hafta ölçüm al, tek değişken değiştir, başarı ölçütünü sayıyla yaz ve iki hafta sonunda devam veya durdurma kararı ver. Ölçüt karşılanmazsa kapsamı büyütme.",
+                }),
+              },
+            ],
+          },
+        ],
+      }),
+    }),
+  });
+  await engine.run({ key: "voices-1" });
+  const roster = engine.state().agents.map((a) => `${a.name} · ${a.role}`);
+  const result = await engine.visitorTask({
+    brief: "Akşam vardiyasında bekleme süresini kısaltmak istiyorum",
+    ip: "198.51.100.4",
+  });
+  assert.equal(result.work.mode, "ai");
+  assert.equal(result.work.notes.length, 3);
+  for (const note of result.work.notes) {
+    assert.ok(roster.includes(note.role), `${note.role} kadroda olmalı`);
+    assert.ok(note.note.length > 5);
+  }
+  assert.doesNotMatch(JSON.stringify(result.work.notes), /Uydurma Rol/);
+  assert.equal(engine.visitorFeed().length, 1);
+});
