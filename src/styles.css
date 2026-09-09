@@ -5010,3 +5010,13 @@ a.lp-file:hover {
 .lp-steps {
   grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
 }
+/* Yedi adım: son satırdaki kartlar da ortada dursun */
+.lp-steps {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.lp-steps article {
+  flex: 1 1 220px;
+  max-width: 280px;
+}
