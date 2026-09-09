@@ -1,5 +1,5 @@
 import express from "express";
-import { createHash, timingSafeEqual } from "node:crypto";
+import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { createEngine } from "./engine.js";
@@ -23,6 +23,50 @@ export function createApp({
     if (req.path.startsWith("/api/")) res.set("Cache-Control", "no-store");
     next();
   });
+  // Inbound mail arrives before the JSON parser: Svix signs the raw body.
+  const inboundSecret = process.env.INBOUND_WEBHOOK_SECRET || "";
+  app.post(
+    "/api/mail/inbound",
+    express.raw({ type: "*/*", limit: "3mb" }),
+    async (req, res) => {
+      if (!inboundSecret) return res.status(503).json({ error: "closed" });
+      const raw = Buffer.isBuffer(req.body) ? req.body : Buffer.from("");
+      const id = req.get("svix-id") || req.get("webhook-id") || "";
+      const timestamp =
+        req.get("svix-timestamp") || req.get("webhook-timestamp") || "";
+      const header =
+        req.get("svix-signature") || req.get("webhook-signature") || "";
+      const age = Math.abs(Date.now() / 1000 - Number(timestamp));
+      if (!id || !timestamp || !header || !Number.isFinite(age) || age > 300)
+        return res.status(400).json({ error: "bad signature" });
+      const key = Buffer.from(inboundSecret.replace(/^whsec_/, ""), "base64");
+      const expected = createHmac("sha256", key)
+        .update(`${id}.${timestamp}.${raw.toString("utf8")}`)
+        .digest("base64");
+      const given = header
+        .split(" ")
+        .map((part) => part.split(",").pop() || "")
+        .filter(Boolean);
+      const match = given.some((value) => {
+        const a = Buffer.from(value);
+        const b = Buffer.from(expected);
+        return a.length === b.length && timingSafeEqual(a, b);
+      });
+      if (!match) return res.status(401).json({ error: "bad signature" });
+      let event = null;
+      try {
+        event = JSON.parse(raw.toString("utf8"));
+      } catch {
+        return res.status(400).json({ error: "bad payload" });
+      }
+      // Always answer 200 once the signature is valid, so Resend does not retry forever.
+      res.json({ received: true });
+      if (event?.type === "email.received" && event.data)
+        await engine
+          .forwardInbound(event.data)
+          .catch(() => console.error("Inbound forward failed."));
+    },
+  );
   app.use(express.json({ limit: "8kb" }));
   const attempts = new Map();
   function owner(req, res, next) {

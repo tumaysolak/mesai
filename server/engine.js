@@ -2319,6 +2319,7 @@ export function createEngine(options = {}) {
         to: [m.to],
         subject: m.subject,
         html: m.html,
+        ...(m.replyTo ? { reply_to: [m.replyTo] } : {}),
       }));
       try {
         const response = await fetchImpl("https://api.resend.com/emails/batch", {
@@ -2435,8 +2436,34 @@ export function createEngine(options = {}) {
     return sendMails([
       {
         to: contactTo,
+        replyTo: email,
         subject: `MESAI iletişim formu · ${escapeMail(email)}`,
         html: mailShell("Siteden yeni mesaj", body, ""),
+      },
+    ]);
+  }
+
+  // iletisim@mesailabs.com is a real mailbox: Resend receives it and posts it here.
+  async function forwardInbound(mail) {
+    if (!contactTo) return { sent: 0, reason: "not_configured" };
+    const from = cleanText(mail.from || "bilinmeyen gönderen", 200);
+    const to = Array.isArray(mail.to)
+      ? mail.to.join(", ")
+      : cleanText(mail.to || "", 200);
+    const subject = cleanText(mail.subject || "(konu yok)", 200);
+    const address = (from.match(/<([^>]+)>/) || [null, from])[1];
+    const content = mail.html
+      ? cleanText(mail.html, 60000)
+      : `<p style="white-space:pre-wrap;font-size:15px;line-height:1.75">${escapeMail(
+          cleanText(mail.text || "(boş mesaj)", 20000),
+        )}</p>`;
+    const header = `<p style="font-size:13px;color:#7a847b">Gelen posta · <b>${escapeMail(from)}</b> → ${escapeMail(to)}<br>Konu: ${escapeMail(subject)}${(mail.attachments || []).length ? `<br>${mail.attachments.length} ek var; ekler Resend panelinde durur.` : ""}</p><hr style="border:0;border-top:1px solid #e2e6dc;margin:16px 0">`;
+    return sendMails([
+      {
+        to: contactTo,
+        replyTo: validEmail(address) ? address : undefined,
+        subject: `MESAI gelen posta · ${subject}`,
+        html: mailShell("Gelen posta", header + content, ""),
       },
     ]);
   }
@@ -2757,6 +2784,7 @@ ${current.finance?.crisisDays ? `<p style="font-size:14px;line-height:1.7;backgr
     deliverPlan,
     deliverStory,
     contact,
+    forwardInbound,
     reportList,
     reportDay,
     reset,
