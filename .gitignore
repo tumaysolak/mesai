@@ -1,0 +1,13 @@
+node_modules/
+dist/
+data/
+.env
+.env.*
+!.env.example
+.railway/
+*.db
+*.db-*
+test-results/
+playwright-report/
+.DS_Store
+*.log
