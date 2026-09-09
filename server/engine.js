@@ -1108,9 +1108,10 @@ export function createEngine(options = {}) {
         );
         decision.status = "completed";
         decision.result = resultText;
+        // Provisional wording while the shift runs; the retrospective replaces it.
         const lesson = result.success
-          ? "Küçük kapsam ve anlaşılır teslim, bu segmentte olumlu sinyal verdi. Bir sonraki deneyde aynı varsayım tekrar sınanmalı."
-          : "İlgi tek başına gelir değildir. Bir sonraki denemede ölçüm kanıtını güçlendir, mesajı değiştir ve bütçeyi sınırlı tut.";
+          ? `${result.customers} modellenen pilot alındı. Retrospektif bekleniyor.`
+          : `${result.interested} ilgi, 0 pilot. Retrospektif bekleniyor.`;
         context.lesson = lesson;
         current.experiments.unshift({
           id: `${context.id}-experiment`,
@@ -1226,6 +1227,14 @@ export function createEngine(options = {}) {
         );
         context.lesson = cleanText(retro?.lesson, 400).trim() || fallbackLesson;
         current.learning[key].lesson = context.lesson;
+        const experiment = current.experiments.find(
+          (e) => e.id === `${context.id}-experiment`,
+        );
+        if (experiment) experiment.lesson = context.lesson;
+        const completed = current.decisions.find(
+          (d) => d.id === context.decisionId,
+        );
+        if (completed) completed.result = `${completed.result} Ders: ${context.lesson}`;
         const promoted = [];
         for (const a of current.agents) {
           const focus = a.preference in roleLesson ? a.preference : "execution";

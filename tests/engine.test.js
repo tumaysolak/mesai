@@ -572,3 +572,15 @@ test("an older snapshot without the payroll layer is migrated instead of crashin
   assert.ok(migrated.achievements.some((a) => a.id === "dreamteam"));
   assert.ok(migrated.hiring.hired.length === 0);
 });
+
+test("the retrospective lesson replaces the provisional one everywhere it is shown", async (t) => {
+  const engine = engineFor(t, { fetchImpl: () => { throw new Error("no ai"); } });
+  await engine.run({ key: "lesson-1" });
+  const state = engine.state();
+  const experiment = state.experiments[0];
+  const decision = state.decisions.find((d) => d.status === "completed");
+  assert.doesNotMatch(experiment.lesson, /Retrospektif bekleniyor/);
+  assert.match(experiment.lesson, /\d/);
+  assert.match(decision.result, /Ders:/);
+  assert.ok(experiment.lesson.length > 40);
+});
