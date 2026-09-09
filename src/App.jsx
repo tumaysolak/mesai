@@ -3,7 +3,7 @@ import Landing from "./Landing.jsx";
 import Markdown from "./Markdown.jsx";
 import Reports from "./Reports.jsx";
 import Legal, { LEGAL_ROUTES } from "./Legal.jsx";
-import Gate, { readAccess } from "./Gate.jsx";
+import Gate, { ACCESS_KEY, readAccess } from "./Gate.jsx";
 import {
   Finance,
   Ledger,
@@ -1942,11 +1942,13 @@ function OwnerModal({
 
 function normalizeState(raw) {
   // The server is the source of truth; normalization only protects list rendering during startup.
-  for (const key of ["company", "runtime", "config"])
+  for (const key of ["company", "runtime"])
     if (!raw[key] || typeof raw[key] !== "object")
       throw new Error("Şirket verisi henüz hazır değil.");
   return {
     ...raw,
+    // The product page receives a teaser payload without the panel's collections.
+    config: raw.config || { autonomous: true },
     agents: (raw.agents || []).map((a) => ({
       ...a,
       memories: a.memories || [],
@@ -2004,10 +2006,20 @@ export default function App() {
     controller.current = new AbortController();
     const timer = setTimeout(() => controller.current?.abort(), 10000);
     try {
-      const response = await fetch("/api/state", {
+      const pass = readAccess();
+      const response = await fetch(pass ? "/api/state" : "/api/public", {
         signal: controller.current.signal,
         cache: "no-store",
+        headers: pass ? { Authorization: `Bearer ${pass}` } : undefined,
       });
+      if (response.status === 401) {
+        // The address was removed on the server; ask for it again.
+        try {
+          localStorage.removeItem(ACCESS_KEY);
+        } catch {}
+        setAccess("");
+        throw new Error("Panel erişimi yenilenmeli.");
+      }
       if (!response.ok) throw new Error("Ofise bağlantı kurulamadı.");
       const next = normalizeState(await response.json());
       if (mounted.current) {

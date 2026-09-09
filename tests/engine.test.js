@@ -1004,3 +1004,19 @@ test("the panel costs one e-mail address, and the founder can see who came in", 
   assert.equal(rows.find((r) => r.email === "abone@example.com").subscribed, true);
   assert.equal(rows.find((r) => r.email === "okur@example.com").subscribed, false);
 });
+
+test("the product page teaser hides what the panel shows", async (t) => {
+  const engine = engineFor(t, { databasePath: ":memory:" });
+  const teaser = engine.publicState();
+  assert.ok(teaser.company.day >= 0);
+  assert.ok(teaser.agents.length > 0);
+  for (const key of ["decisions", "events", "tasks", "ledger", "finance", "config"])
+    assert.equal(teaser[key], undefined, `${key} sızmamalı`);
+  assert.equal(teaser.agents[0].memories, undefined);
+  assert.equal(typeof teaser.artifactCount, "number");
+  assert.equal(typeof teaser.memoryCount, "number");
+  const granted = await engine.grantAccess({ email: "kapi@example.com" });
+  assert.equal(engine.hasAccess(granted.token), true);
+  assert.equal(engine.hasAccess("uydurma"), false);
+  assert.equal(engine.hasAccess(""), false);
+});

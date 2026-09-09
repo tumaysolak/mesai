@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import Markdown from "./Markdown.jsx";
+import { readAccess } from "./Gate.jsx";
 import {
   CalendarDays,
   ChevronRight,
@@ -14,6 +15,10 @@ const number = (value) =>
     Number(value) || 0,
   );
 const money = (value) => `₺${number(value)}`;
+const authHeader = () => {
+  const pass = readAccess();
+  return pass ? { Authorization: `Bearer ${pass}` } : {};
+};
 const dateLabel = (value) => {
   if (!value) return "—";
   const parsed = new Date(`${value}T12:00:00+03:00`);
@@ -35,7 +40,7 @@ export default function Reports({ openArtifact, artifacts = [] }) {
     [loading, setLoading] = useState(false);
   useEffect(() => {
     let alive = true;
-    fetch("/api/reports?limit=60")
+    fetch("/api/reports?limit=60", { headers: authHeader() })
       .then((r) => r.json())
       .then((data) => {
         if (!alive) return;
@@ -52,7 +57,7 @@ export default function Reports({ openArtifact, artifacts = [] }) {
     if (selected == null) return;
     let alive = true;
     setLoading(true);
-    fetch(`/api/reports/${selected}`)
+    fetch(`/api/reports/${selected}`, { headers: authHeader() })
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error())))
       .then((data) => alive && setDetail(data))
       .catch(() => alive && setError("Bu günün raporu açılamadı."))

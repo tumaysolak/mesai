@@ -160,7 +160,7 @@ export default function Landing({ data, goToPanel, goToLegal }) {
           <Stat
             icon={FileText}
             label="ÜRETİLEN DOSYA"
-            value={live ? number(data.artifacts.length) : "—"}
+            value={live ? number(data.artifactCount ?? data.artifacts.length) : "—"}
             foot="Hepsi indirilebilir"
           />
           <Stat
@@ -168,7 +168,10 @@ export default function Landing({ data, goToPanel, goToLegal }) {
             label="KAYITLI ÖĞRENİM"
             value={
               live
-                ? number(agents.reduce((n, a) => n + a.memories.length, 0))
+                ? number(
+                    data.memoryCount ??
+                      agents.reduce((n, a) => n + (a.memories?.length || 0), 0),
+                  )
                 : "—"
             }
             foot="Kalıcı bellek"

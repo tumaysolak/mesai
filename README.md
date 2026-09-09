@@ -121,7 +121,7 @@ Kurucu paneli, sol alttaki kurucu girişi alanından açılır. `ADMIN_TOKEN` ya
 
 ## Panele giriş ve izleyici kaydı
 
-Ürün sayfası herkese açıktır; canlı paneli (`/panel`) açmak için ziyaretçi bir kez e-posta bırakır. `POST /api/access` adresi kaydı oluşturur ve tarayıcıda saklanan rastgele bir anahtar döner, böylece aynı tarayıcıda bir daha sorulmaz. Bülten aboneliği ayrı bir onay kutusudur ve çift onaylı akışı kullanır. Kurucu, panel içindeki kurucu alanından "Paneli kimler izledi" listesini görür: e-posta, ilk giriş, son giriş, ziyaret sayısı ve bülten durumu; liste CSV olarak kopyalanabilir (`GET /api/admin/visitors`).
+Ürün sayfası herkese açıktır ve `GET /api/public` ile yalnız bir özet alır: şirketin günü, kadrosu, bordrosu, üretilen dosya sayısı ve son üç dosya. Kararlar, akış, defter, borç ve raporlar bu özette yer almaz. Canlı paneli (`/panel`) açmak için ziyaretçi bir kez e-posta bırakır; `GET /api/state` ve `GET /api/reports` yalnız bu erişim anahtarıyla (veya yönetici anahtarıyla) yanıt verir, anahtarsız istek 401 döner. `POST /api/access` adresi kaydı oluşturur ve tarayıcıda saklanan rastgele bir anahtar döner, böylece aynı tarayıcıda bir daha sorulmaz. Bülten aboneliği ayrı bir onay kutusudur ve çift onaylı akışı kullanır. Kurucu, panel içindeki kurucu alanından "Paneli kimler izledi" listesini görür: e-posta, ilk giriş, son giriş, ziyaret sayısı ve bülten durumu; liste CSV olarak kopyalanabilir (`GET /api/admin/visitors`).
 
 ## Hukuki sayfalar ve iletişim
 

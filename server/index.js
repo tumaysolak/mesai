@@ -143,11 +143,26 @@ export function createApp({
       status: s.runtime.status,
     });
   });
-  app.get("/api/state", (req, res) => res.json(engine.state()));
-  app.get("/api/reports", (req, res) =>
+  // The panel is behind the door: the product page gets a teaser, watchers get the full state.
+  function watcher(req, res, next) {
+    const header = req.get("authorization") || "";
+    const token = header.startsWith("Bearer ") ? header.slice(7) : "";
+    if (engine.hasAccess(token)) return next();
+    if (adminToken.length >= 24 && token) {
+      const digest = (value) => createHash("sha256").update(value).digest();
+      if (timingSafeEqual(digest(token), digest(adminToken))) return next();
+    }
+    return res.status(401).json({
+      error: "Paneli görmek için bir kez e-posta bırakman gerekiyor.",
+      code: "access_required",
+    });
+  }
+  app.get("/api/public", (req, res) => res.json(engine.publicState()));
+  app.get("/api/state", watcher, (req, res) => res.json(engine.state()));
+  app.get("/api/reports", watcher, (req, res) =>
     res.json({ reports: engine.reportList(Number(req.query.limit) || 60) }),
   );
-  app.get("/api/reports/:day", (req, res) => {
+  app.get("/api/reports/:day", watcher, (req, res) => {
     const day = Number(req.params.day);
     if (!Number.isInteger(day) || day < 1)
       return res.status(400).json({ error: "Geçersiz gün." });

@@ -43,9 +43,9 @@ const post = (data, headers = authorization) => ({
   body: JSON.stringify(data),
 });
 
-test("public observers can see state and health but cannot start or pause the company", async (t) => {
+test("public observers can see the teaser but cannot start or pause the company", async (t) => {
   const { engine, request } = await serve(t);
-  for (const path of ["/api/state", "/api/health"]) {
+  for (const path of ["/api/public", "/api/health"]) {
     const response = await request(path);
     assert.equal(response.status, 200);
     assert.equal(response.headers.get("Cache-Control"), "no-store");
@@ -62,6 +62,22 @@ test("public observers can see state and health but cannot start or pause the co
     401,
   );
   assert.equal((await request("/api/admin/check")).status, 401);
+  // the live panel itself needs an address at the door
+  const locked = await request("/api/state");
+  assert.equal(locked.status, 401);
+  assert.equal((await locked.json()).code, "access_required");
+  assert.equal((await request("/api/reports")).status, 401);
+  const granted = await engine.grantAccess({ email: "izleyici@example.com" });
+  const opened = await request("/api/state", {
+    headers: { Authorization: `Bearer ${granted.token}` },
+  });
+  assert.equal(opened.status, 200);
+  assert.ok((await opened.json()).decisions);
+  // the owner key opens the same door
+  assert.equal(
+    (await request("/api/state", { headers: authorization })).status,
+    200,
+  );
   assert.equal(engine.state().company.day, 0);
   assert.equal(engine.state().config.autonomous, true);
 });

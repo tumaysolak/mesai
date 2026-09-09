@@ -2446,6 +2446,58 @@ export function createEngine(options = {}) {
     ]);
   }
 
+  // The product page shows a teaser; the live detail lives behind the door.
+  function publicState() {
+    const s = state();
+    return {
+      company: {
+        name: s.company.name,
+        day: s.company.day,
+        level: s.company.level,
+        focus: s.company.focus,
+        payroll: s.company.payroll,
+        teamwork: s.company.teamwork,
+        headcount: s.company.headcount,
+        condition: s.company.condition,
+      },
+      agents: s.agents.map((a) => ({
+        id: a.id,
+        name: a.name,
+        role: a.role,
+        title: a.title,
+        level: a.level,
+      })),
+      artifacts: (s.artifacts || []).slice(0, 3).map((a) => ({
+        id: a.id,
+        day: a.day,
+        title: a.title,
+        description: a.description,
+        type: a.type,
+      })),
+      artifactCount: (s.artifacts || []).length,
+      memoryCount: (s.agents || []).reduce(
+        (n, a) => n + (a.memories?.length || 0),
+        0,
+      ),
+      hiring: { postings: s.hiring?.postings || 0 },
+      community: s.community,
+      runtime: {
+        status: s.runtime.status,
+        phase: s.runtime.phase,
+        nextRunAt: s.runtime.nextRunAt,
+        timezone: s.runtime.timezone,
+      },
+    };
+  }
+  const hasAccess = (token) =>
+    Boolean(
+      token &&
+        typeof token === "string" &&
+        db
+          .prepare("SELECT 1 FROM access WHERE token=?")
+          .get(token.slice(0, 64)),
+    );
+
   // Watching the office is free, but it costs one e-mail address, once per browser.
   async function grantAccess({ email, subscribe = false, source = "" } = {}) {
     if (!validEmail(email)) return { error: "invalid" };
@@ -2844,6 +2896,8 @@ ${current.finance?.crisisDays ? `<p style="font-size:14px;line-height:1.7;backgr
     deliverStory,
     contact,
     grantAccess,
+    publicState,
+    hasAccess,
     touchAccess,
     accessList,
     accessCount,
