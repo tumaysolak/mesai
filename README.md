@@ -4,7 +4,7 @@
 
 [Canlı şirketi izle](https://mesailabs.com) · [GitHub](https://github.com/tumaysolak/mesai)
 
-MESAI, Tümay Solak'ın bağımsız otonom şirket laboratuvarıdır. CEO, CTO, CFO, operasyon, ürün, büyüme, tasarım ve araştırma rolleriyle kurulan sekiz kişilik kurgusal ekip aynı şirketi yönetir. Her sabah **08.00, Europe/Istanbul** saatinde bir mesai başlar. Şirket kazandıkça bordro ödenir, seviye atlayan çalışanın ücreti artar ve kasa uzun bir süreyi karşılayabildiğinde yeni biri işe alınır.
+MESAI, bağımsız bir otonom şirket laboratuvarıdır. CEO, CTO, CFO, operasyon, ürün, büyüme, tasarım ve araştırma rolleriyle kurulan sekiz kişilik kurgusal ekip aynı şirketi yönetir. Her sabah **08.00, Europe/Istanbul** saatinde bir mesai başlar. Şirket kazandıkça bordro ödenir, seviye atlayan çalışanın ücreti artar ve kasa uzun bir süreyi karşılayabildiğinde yeni biri işe alınır.
 
 - `/` ürün sayfası: deneyin ne olduğunu ve canlı sayıları anlatır.
 - `/panel` izleyici paneli: ofis, kararlar, iş panosu, çıktılar ve öğrenme günlüğü.
@@ -117,7 +117,11 @@ Railway rehberleri: [Kalıcı depolama](https://docs.railway.com/volumes), [Serv
 
 Herkes paneli ve dosyaları okuyabilir. Panel gerçek zamanlıdır: saat Europe/Istanbul üzerinden işler, akış dört saniyede bir yenilenir, ofisteki hareket o anki mesai aşamasını gösterir. Tekrar oynatma modu yoktur.
 
-Kurucu paneli, sol alttaki Tümay Solak alanından açılır. `ADMIN_TOKEN` yalnız bu panelde girilir; URL'ye veya kaynak koda konmaz. Yetkili kurucu ek mesai başlatabilir ve otomatik zamanlamayı duraklatabilir. Duraklatma devam eden mesaiyi yarıda kesmez, sonraki mesaileri durdurur.
+Kurucu paneli, sol alttaki kurucu girişi alanından açılır. `ADMIN_TOKEN` yalnız bu panelde girilir; URL'ye veya kaynak koda konmaz. Yetkili kurucu ek mesai başlatabilir ve otomatik zamanlamayı duraklatabilir. Duraklatma devam eden mesaiyi yarıda kesmez, sonraki mesaileri durdurur.
+
+## Hukuki sayfalar ve iletişim
+
+Site dört hukuki sayfa yayınlar: `/gizlilik` (KVKK aydınlatma metni ve gizlilik politikası), `/kosullar` (kullanım koşulları), `/cerez` (çerez politikası — izleme çerezi kullanılmıyor) ve `/iletisim` (iletişim formu). Formdan gelen mesajlar `POST /api/contact` üzerinden Resend ile `CONTACT_TO` ortam değişkenindeki adrese iletilir; bu adres koda veya herkese açık veriye yazılmaz. Üründe kişisel isim, kişisel e-posta veya sosyal medya hesabı geçmez; yayınlanan iletişim adresi iletisim@mesailabs.com'dur.
 
 ## Lisans
 

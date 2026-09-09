@@ -14,6 +14,7 @@ import {
   payrollOf,
   migrate,
   conditionFor,
+  creditLimitOf,
   CONDITIONS,
 } from "../server/engine.js";
 import { CANDIDATES, PERSONAS, STRATEGIES } from "../server/personas.js";
@@ -900,4 +901,78 @@ test("a company that runs out of runway loses the people it hired last", async (
   assert.equal(after.company.payroll, payrollOf(after.agents));
   assert.ok(after.hiring.departures >= 1);
   assert.ok(after.events.some((e) => e.type === "departure"));
+});
+
+test("an empty till turns into debt, and a full till pays it back", async (t) => {
+  let clock = new Date("2026-09-14T10:00:00Z");
+  const dir = await mkdtemp(join(tmpdir(), "mesai-debt-"));
+  t.after(() => rm(dir, { recursive: true, force: true }));
+  const databasePath = join(dir, "debt.db");
+  const engine = engineFor(t, {
+    databasePath,
+    clock: () => clock,
+    bootstrap: true,
+  });
+  await engine.ready;
+  const db = new DatabaseSync(databasePath);
+  const load = () =>
+    JSON.parse(db.prepare("SELECT data FROM snapshots WHERE id=1").get().data);
+  const store = (state) =>
+    db
+      .prepare("UPDATE snapshots SET data=? WHERE id=1")
+      .run(JSON.stringify(state));
+
+  // the company is nearly broke before the next shift
+  const broke = load();
+  broke.company.cash = 200;
+  store(broke);
+  clock = new Date("2026-09-15T10:00:00Z");
+  await engine.run({ key: "debt-day", kind: "manual" });
+  const borrowed = engine.state();
+  assert.ok(borrowed.finance.debt > 0, "kasa bitince kredi kullanılmalı");
+  assert.ok(borrowed.company.cash >= 0, "kredi kasayı ayağa kaldırmalı");
+  assert.ok(borrowed.finance.loans.length > 0);
+  assert.ok(
+    borrowed.events.some((e) => e.type === "debt"),
+    "borçlanma akışta görünmeli",
+  );
+  assert.ok(borrowed.finance.debt <= borrowed.finance.creditLimit);
+
+  // a healthy till pays the loan down again
+  const rich = load();
+  rich.company.cash = 400000;
+  store(rich);
+  clock = new Date("2026-09-16T10:00:00Z");
+  await engine.run({ key: "repay-day", kind: "manual" });
+  const repaid = engine.state();
+  assert.equal(repaid.finance.debt, 0, "nakit varken borç kapanmalı");
+  assert.ok(repaid.finance.repaid > 0);
+  db.close();
+});
+
+test("the credit limit grows with recurring revenue and reputation", () => {
+  const small = creditLimitOf({ recurring: 0, reputation: 50 });
+  const bigger = creditLimitOf({ recurring: 900, reputation: 50 });
+  const trusted = creditLimitOf({ recurring: 900, reputation: 80 });
+  assert.ok(bigger > small);
+  assert.ok(trusted > bigger);
+});
+
+test("no one is hired while the company is carrying heavy debt", () => {
+  const state = migrate({
+    company: {
+      cash: 400000,
+      reputation: 80,
+      recurring: 900,
+      customers: 5,
+      day: 9,
+    },
+    agents: PERSONAS.map((p) => ({ ...p })),
+    hiring: { hired: [], lastHireDay: 0, postings: 0, raises: 0 },
+  });
+  state.finance.creditLimit = creditLimitOf(state.company);
+  state.finance.debt = 0;
+  assert.ok(nextHire(state, 9), "borçsuzken işe alım açık");
+  state.finance.debt = state.finance.creditLimit;
+  assert.equal(nextHire(state, 9), null, "ağır borçta işe alım durur");
 });

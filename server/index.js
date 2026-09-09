@@ -76,6 +76,10 @@ export function createApp({
     const pages = [
       ["/", "1.0", "daily"],
       ["/panel", "0.9", "hourly"],
+      ["/gizlilik", "0.4", "yearly"],
+      ["/kosullar", "0.4", "yearly"],
+      ["/cerez", "0.3", "yearly"],
+      ["/iletisim", "0.5", "monthly"],
     ];
     res.type("application/xml").send(
       `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${pages
@@ -184,6 +188,34 @@ export function createApp({
     }
   });
 
+  const contactHits = new Map();
+  app.post("/api/contact", async (req, res) => {
+    const body = req.body || {};
+    const name = String(body.name || "").trim().slice(0, 80);
+    const email = String(body.email || "").trim().slice(0, 160);
+    const message = String(body.message || "").trim();
+    if (!/^[^\s@]+@[^\s@.]+\.[^\s@]{2,}$/.test(email))
+      return res.status(400).json({ error: "Geçerli bir e-posta yaz." });
+    if (message.length < 10 || message.length > 1500)
+      return res
+        .status(400)
+        .json({ error: "Mesaj en az 10, en fazla 1500 karakter olmalı." });
+    const now = Date.now();
+    const last = contactHits.get(req.ip) || 0;
+    if (now - last < 60000)
+      return res
+        .status(429)
+        .json({ error: "Bir dakika içinde tek mesaj gönderebilirsin." });
+    contactHits.set(req.ip, now);
+    if (contactHits.size > 5000) contactHits.clear();
+    const result = await engine.contact({ name, email, message });
+    if (!result.sent)
+      return res.status(503).json({
+        error:
+          "Mesaj şu an iletilemedi. Biraz sonra tekrar dene veya doğrudan iletisim@mesailabs.com adresine yaz.",
+      });
+    res.json({ sent: true });
+  });
   app.post("/api/mail/subscribe", async (req, res) => {
     const email = typeof req.body?.email === "string" ? req.body.email : "";
     const result = await engine.subscribe(email);

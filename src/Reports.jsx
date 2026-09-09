@@ -198,7 +198,19 @@ export default function Reports({ openArtifact, artifacts = [] }) {
                       <span>Kasa</span>
                       <strong>{money(summary.cash)}</strong>
                     </div>
+                    <div>
+                      <span>Borç</span>
+                      <strong className={summary.debt ? "minus" : ""}>
+                        {money(summary.debt)}
+                      </strong>
+                    </div>
                   </div>
+                  {summary.crisisDays > 0 && (
+                    <p className="report-crisis">
+                      Bu mesai nakit krizinde geçti ({summary.crisisDays}. gün):
+                      kasa eksi, kredi limiti kapalı.
+                    </p>
+                  )}
                   {summary.lesson && (
                     <p className="report-lesson">
                       <b>Günün dersi:</b> {summary.lesson}

@@ -266,6 +266,80 @@ export function Ledger({ entries = [], money }) {
   );
 }
 
+const tl = (value) =>
+  `₺${new Intl.NumberFormat("tr-TR", { maximumFractionDigits: 0 }).format(
+    Number(value) || 0,
+  )}`;
+
+// Money is allowed to run out here: the debt line is part of the story, not a hidden state.
+export function Finance({ finance, company }) {
+  if (!finance) return null;
+  const used = finance.creditLimit
+    ? Math.min(100, Math.round((finance.debt / finance.creditLimit) * 100))
+    : 0;
+  const net = (Number(company?.cash) || 0) - (Number(finance.debt) || 0);
+  return (
+    <section className={`panel finance-panel ${finance.crisisDays ? "finance-crisis" : ""}`}>
+      <div className="panel-heading">
+        <div>
+          <h2>Nakit ve borç</h2>
+          <p>
+            Kasa bordroyu karşılamadığında şirket kredi kullanır ve faiz öder.
+            Güçlendiğinde borcunu kapatır. Limit dolarsa kriz başlar.
+          </p>
+        </div>
+        <span className="muted">
+          {finance.crisisDays
+            ? `${finance.crisisDays}. kriz mesaisi`
+            : finance.debt
+              ? "borçlu"
+              : "borçsuz"}
+        </span>
+      </div>
+      <div className="finance-figures">
+        <div>
+          <span>Kasa</span>
+          <strong>{tl(company?.cash)}</strong>
+        </div>
+        <div>
+          <span>Borç</span>
+          <strong className={finance.debt ? "minus" : ""}>
+            {tl(finance.debt)}
+          </strong>
+        </div>
+        <div>
+          <span>Net durum</span>
+          <strong className={net >= 0 ? "plus" : "minus"}>{tl(net)}</strong>
+        </div>
+        <div>
+          <span>Kredi limiti</span>
+          <strong>{tl(finance.creditLimit)}</strong>
+        </div>
+      </div>
+      <div className="finance-track" aria-hidden="true">
+        <i style={{ width: `${used}%` }} />
+      </div>
+      <p className="visitor-note">
+        Limitin %{used}'i kullanıldı. Bugüne kadar {tl(finance.borrowed)} kredi
+        çekildi, {tl(finance.repaid)} kapatıldı, {tl(finance.interestPaid)} faiz
+        ödendi.
+        {finance.crisisDays
+          ? " Kredi limiti kapalı; ekip masraf kısıyor ve gerekirse ürün hattı devrediliyor."
+          : ""}
+      </p>
+      {(finance.loans || []).length > 0 && (
+        <div className="finance-loans">
+          {finance.loans.slice(0, 4).map((loan, i) => (
+            <span key={i}>
+              {loan.day}. mesai · {tl(loan.amount)} · {loan.reason}
+            </span>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
 export function Organic({ products = [], principles = [], departures = 0 }) {
   const active = products.filter((p) => p.status === "active");
   const retired = products.filter((p) => p.status !== "active");

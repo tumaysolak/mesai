@@ -1,6 +1,6 @@
 # MESAI shared implementation contract
 
-A Turkish public observer dashboard for an autonomous fictional venture studio focused on energy efficiency and innovation. Independent personal experiment by Tümay Solak, no employer branding or CV personal details. All people fictional. Money/customers/revenue are explicitly simulated; downloadable artifacts are real. No sending messages, spending real funds, external commits or code execution by agents. LLM mode only when OPENAI_API_KEY configured; transparently labelled rules mode otherwise.
+A Turkish public observer dashboard for an autonomous fictional venture studio focused on energy efficiency and innovation. Independent experiment published as MESAI Labs; no personal identity, employer branding or CV details anywhere in the product. All people fictional. Money/customers/revenue are explicitly simulated; downloadable artifacts are real. No sending messages, spending real funds, external commits or code execution by agents. LLM mode only when OPENAI_API_KEY configured; transparently labelled rules mode otherwise.
 
 Node 24, ESM, Express, node:sqlite with DATABASE_PATH default data/mesai.db, persistent Railway /data/mesai.db. React + Vite + lucide-react. Root writes package.json/config/deployment/docs. Backend agent owns server/**. Frontend agent owns src/** + index.html. Reviewer owns tests/** and reviews, do not overlap.
 

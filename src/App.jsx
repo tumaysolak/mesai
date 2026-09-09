@@ -2,7 +2,14 @@ import React, { useEffect, useRef, useState } from "react";
 import Landing from "./Landing.jsx";
 import Markdown from "./Markdown.jsx";
 import Reports from "./Reports.jsx";
-import { Ledger, MailSignup, Organic, VisitorTask } from "./Community.jsx";
+import Legal, { LEGAL_ROUTES } from "./Legal.jsx";
+import {
+  Finance,
+  Ledger,
+  MailSignup,
+  Organic,
+  VisitorTask,
+} from "./Community.jsx";
 import Portrait from "./Portrait.jsx";
 import {
   Activity,
@@ -82,6 +89,12 @@ const NAV = [
   { id: "reports", label: "Günlük raporlar", icon: CalendarDays },
   { id: "learning", label: "Öğrenme günlüğü", icon: BrainCircuit },
 ];
+// The site has three kinds of page: the product page, the live panel and the legal texts.
+function routeFor(path) {
+  if (path.startsWith("/panel")) return "panel";
+  const slug = path.replace(/^\/+|\/+$/g, "");
+  return LEGAL_ROUTES.includes(slug) ? slug : "landing";
+}
 const number = (value) =>
   new Intl.NumberFormat("tr-TR", { maximumFractionDigits: 0 }).format(
     Number(value) || 0,
@@ -1330,6 +1343,7 @@ function Learning({ data, openAgent }) {
           </article>
         ))}
       </div>
+      <Finance finance={data.finance} company={data.company} />
       <Organic
         products={data.products || []}
         principles={data.principles || []}
@@ -1365,7 +1379,7 @@ function About({ data }) {
       <SectionHeading
         eyebrow="AÇIK BİR DENEY"
         title="Bir şirket kendi kendine büyür mü?"
-        description="MESAI, Tümay Solak tarafından kurulan bir otonom şirket simülasyonu. Bir yanıt vermekten çok, soruyu görünür kılmak için var."
+        description="MESAI, kendi kendine çalışan bir şirketin her kararını ve her kuruşunu açıkta tutan bir otonom şirket simülasyonu. Bir yanıt vermekten çok, soruyu görünür kılmak için var."
       />
       <div className="about-manifesto">
         <span>08:00</span>
@@ -1425,8 +1439,8 @@ function About({ data }) {
         </section>
       </div>
       <p className="about-credit">
-        Tümay Solak'ın bağımsız kişisel projesidir. Herhangi bir işveren adına
-        yürütülmez.
+        MESAI Labs bağımsız bir deneydir; herhangi bir işveren adına
+        yürütülmez. İletişim: iletisim@mesailabs.com
       </p>
     </>
   );
@@ -1881,9 +1895,7 @@ export default function App() {
     [ownerOpen, setOwnerOpen] = useState(false);
   const [now, setNow] = useState(Date.now()),
     [clock, setClock] = useState("");
-  const [route, setRoute] = useState(() =>
-    window.location.pathname.startsWith("/panel") ? "panel" : "landing",
-  );
+  const [route, setRoute] = useState(() => routeFor(window.location.pathname));
   const [admin, setAdmin] = useState(false),
     [token, setToken] = useState(() => {
       try {
@@ -1949,10 +1961,7 @@ export default function App() {
           : "overview",
       );
     };
-    const onRoute = () =>
-      setRoute(
-        window.location.pathname.startsWith("/panel") ? "panel" : "landing",
-      );
+    const onRoute = () => setRoute(routeFor(window.location.pathname));
     window.addEventListener("hashchange", onHash);
     window.addEventListener("popstate", onRoute);
     return () => {
@@ -1980,7 +1989,7 @@ export default function App() {
 
   function goTo(path) {
     window.history.pushState({}, "", path);
-    setRoute(path.startsWith("/panel") ? "panel" : "landing");
+    setRoute(routeFor(path));
     window.scrollTo({ top: 0, behavior: "instant" });
   }
   function navigate(id) {
@@ -2021,8 +2030,22 @@ export default function App() {
   const section =
     NAV.find((n) => n.id === page)?.label ||
     (page === "activity" ? "Ofisten haberler" : "Deney hakkında");
+  if (LEGAL_ROUTES.includes(route))
+    return (
+      <Legal
+        page={route}
+        goHome={() => goTo("/")}
+        goToLegal={(id) => goTo(`/${id}`)}
+      />
+    );
   if (route === "landing")
-    return <Landing data={data} goToPanel={() => goTo("/panel")} />;
+    return (
+      <Landing
+        data={data}
+        goToPanel={() => goTo("/panel")}
+        goToLegal={(id) => goTo(`/${id}`)}
+      />
+    );
   return (
     <div className="app-shell">
       {mobileOpen && (
@@ -2126,13 +2149,11 @@ export default function App() {
             <ArrowUpRight size={14} />
           </button>
           <button className="founder" onClick={() => setOwnerOpen(true)}>
-            <span className="founder-avatar">TS</span>
+            <span className="founder-avatar">M.</span>
             <span>
-              <strong>Tümay Solak</strong>
+              <strong>Kurucu girişi</strong>
               <small>
-                {admin
-                  ? "Kurucu · yönetici erişimi"
-                  : "Kurucu & deney tasarımcısı"}
+                {admin ? "Yönetici erişimi açık" : "Yetkili erişim"}
               </small>
             </span>
             <LockKeyhole size={14} />
@@ -2295,8 +2316,10 @@ export default function App() {
             <p>
               Karakterler ve ticari sonuçlar kurgusal. Üretilen dosyalar gerçek.
             </p>
-            <span>
-              Merakla kuruldu. <span className="footer-flower">✳</span>
+            <span className="footer-legal">
+              <button onClick={() => goTo("/gizlilik")}>Gizlilik ve KVKK</button>
+              <button onClick={() => goTo("/kosullar")}>Koşullar</button>
+              <button onClick={() => goTo("/iletisim")}>İletişim</button>
             </span>
           </footer>
         </main>

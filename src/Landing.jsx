@@ -9,7 +9,6 @@ import {
   Download,
   FileText,
   Github,
-  Linkedin,
   Mail,
   Play,
   Sparkles,
@@ -81,7 +80,7 @@ function Stat({ icon: Icon, label, value, foot }) {
   );
 }
 
-export default function Landing({ data, goToPanel }) {
+export default function Landing({ data, goToPanel, goToLegal }) {
   const [copied, setCopied] = useState(false);
   const company = data?.company;
   const agents = data?.agents || [];
@@ -356,36 +355,27 @@ export default function Landing({ data, goToPanel }) {
             <span>.</span>
           </span>
           <p>
-            Tümay Solak'ın bağımsız kişisel deneyi. Bir işverenin ürünü veya
-            kurumsal beyanı değildir.
+            MESAI Labs bağımsız bir otonom şirket deneyidir. Bir işverenin
+            ürünü veya kurumsal beyanı değildir.
           </p>
         </div>
         <div className="lp-links">
           <button onClick={goToPanel}>
             Canlı panel <ArrowUpRight size={13} />
           </button>
-          <a
-            href="https://github.com/tumaysolak/mesai"
-            target="_blank"
-            rel="noreferrer"
-          >
-            <Github size={14} /> GitHub
-          </a>
-          <a
-            href="https://www.linkedin.com/in/tumaysolak"
-            target="_blank"
-            rel="noreferrer"
-          >
-            <Linkedin size={14} /> LinkedIn
-          </a>
+          <button onClick={() => goToLegal("gizlilik")}>Gizlilik ve KVKK</button>
+          <button onClick={() => goToLegal("kosullar")}>
+            Kullanım koşulları
+          </button>
+          <button onClick={() => goToLegal("cerez")}>Çerezler</button>
           <button
             onClick={() => {
-              navigator.clipboard?.writeText("tumaysolak@gmail.com");
+              navigator.clipboard?.writeText("iletisim@mesailabs.com");
               setCopied(true);
               setTimeout(() => setCopied(false), 2000);
             }}
           >
-            <Mail size={14} /> {copied ? "Kopyalandı" : "tumaysolak@gmail.com"}
+            <Mail size={14} /> {copied ? "Kopyalandı" : "iletisim@mesailabs.com"}
           </button>
         </div>
       </footer>

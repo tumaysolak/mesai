@@ -4546,3 +4546,219 @@ a.lp-file:hover {
   text-underline-offset: 3px;
   cursor: pointer;
 }
+.finance-panel .finance-figures {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+  margin: 4px 0 12px;
+}
+.finance-figures > div {
+  background: #f4f6ee;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 11px 13px;
+  display: grid;
+  gap: 3px;
+}
+.finance-figures span {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+.finance-figures strong {
+  font-size: 17px;
+}
+.finance-figures .plus {
+  color: #3f7a45;
+}
+.finance-figures .minus {
+  color: #a8622f;
+}
+.finance-track {
+  height: 6px;
+  border-radius: 999px;
+  background: #e7ebdf;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+.finance-track i {
+  display: block;
+  height: 100%;
+  background: #a8622f;
+  transition: width 0.4s ease;
+}
+.finance-crisis {
+  border-color: #eccfb6;
+  background: #fdf6f0;
+}
+.finance-loans {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+.finance-loans span {
+  font-size: 11.5px;
+  color: #5f6d5e;
+  background: #f2f4ec;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+.report-crisis {
+  background: #fbeee6;
+  border: 1px solid #eccfb6;
+  border-radius: 12px;
+  padding: 10px 13px;
+  font-size: 13px;
+  margin: 0 0 14px;
+}
+
+/* ---- Hukuki sayfalar */
+.legal-page {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 48px 24px 72px;
+  color: var(--ink);
+}
+.legal-page h1 {
+  font-size: clamp(28px, 4vw, 40px);
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  margin: 18px 0 18px;
+}
+.legal-page h2 {
+  font-size: 18px;
+  margin: 30px 0 8px;
+}
+.legal-page p,
+.legal-page li {
+  font-size: 15px;
+  line-height: 1.75;
+  color: #3d4c40;
+}
+.legal-page ul {
+  padding-left: 18px;
+}
+.legal-page li {
+  margin-bottom: 8px;
+}
+.legal-back,
+.legal-nav button {
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 7px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink);
+}
+.legal-back:hover,
+.legal-nav button:hover {
+  background: #f2f4ec;
+}
+.legal-nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 26px;
+}
+.legal-nav-active {
+  background: #eef3e2 !important;
+  border-color: #cfdcb4 !important;
+}
+.legal-updated {
+  margin-top: 30px;
+  font-size: 12.5px !important;
+  color: var(--muted) !important;
+}
+.legal-page > footer {
+  margin-top: 42px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.legal-form {
+  display: grid;
+  gap: 12px;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin: 18px 0 10px;
+}
+.legal-form label {
+  display: grid;
+  gap: 5px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.legal-form input,
+.legal-form textarea {
+  font: inherit;
+  font-size: 14px;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #fbfcf7;
+  resize: vertical;
+}
+.legal-form button {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #263f2c;
+  color: #f6f7ee;
+  border: 0;
+  border-radius: 10px;
+  padding: 11px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.legal-form button[disabled] {
+  opacity: 0.6;
+  cursor: default;
+}
+.legal-form small {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.6;
+}
+.legal-error {
+  font-size: 13px;
+  color: #a8622f;
+}
+.legal-ok {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #eef3e2;
+  border-radius: 12px;
+  padding: 14px 16px;
+  font-size: 14px;
+}
+.footer-legal {
+  display: inline-flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.footer-legal button {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  opacity: 0.75;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.footer-legal button:hover {
+  opacity: 1;
+}
