@@ -615,7 +615,7 @@ function Overview({
   return (
     <>
       <SectionHeading
-        eyebrow="OTONOM ŞİRKET DENEYİ · TÜMAY SOLAK"
+        eyebrow="OTONOM ŞİRKET DENEYİ · MESAI LABS"
         title={
           <>
             Fikirden işe.<span className="heading-emphasis"> Her gün.</span>

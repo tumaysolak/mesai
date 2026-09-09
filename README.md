@@ -119,6 +119,10 @@ Herkes paneli ve dosyaları okuyabilir. Panel gerçek zamanlıdır: saat Europe/
 
 Kurucu paneli, sol alttaki kurucu girişi alanından açılır. `ADMIN_TOKEN` yalnız bu panelde girilir; URL'ye veya kaynak koda konmaz. Yetkili kurucu ek mesai başlatabilir ve otomatik zamanlamayı duraklatabilir. Duraklatma devam eden mesaiyi yarıda kesmez, sonraki mesaileri durdurur.
 
+## Panele giriş ve izleyici kaydı
+
+Ürün sayfası herkese açıktır; canlı paneli (`/panel`) açmak için ziyaretçi bir kez e-posta bırakır. `POST /api/access` adresi kaydı oluşturur ve tarayıcıda saklanan rastgele bir anahtar döner, böylece aynı tarayıcıda bir daha sorulmaz. Bülten aboneliği ayrı bir onay kutusudur ve çift onaylı akışı kullanır. Kurucu, panel içindeki kurucu alanından "Paneli kimler izledi" listesini görür: e-posta, ilk giriş, son giriş, ziyaret sayısı ve bülten durumu; liste CSV olarak kopyalanabilir (`GET /api/admin/visitors`).
+
 ## Hukuki sayfalar ve iletişim
 
 Site dört hukuki sayfa yayınlar: `/gizlilik` (KVKK aydınlatma metni ve gizlilik politikası), `/kosullar` (kullanım koşulları), `/cerez` (çerez politikası — izleme çerezi kullanılmıyor) ve `/iletisim` (iletişim formu). Formdan gelen mesajlar `POST /api/contact` üzerinden Resend ile `CONTACT_TO` ortam değişkenindeki adrese iletilir; bu adres koda veya herkese açık veriye yazılmaz. Üründe kişisel isim, kişisel e-posta veya sosyal medya hesabı geçmez; yayınlanan iletişim adresi iletisim@mesailabs.com'dur. Bu adres gerçekten posta alır: alan adının MX kayıtları Railway'in e-posta yönlendirmesine bağlıdır ve gelen postalar özel bir gelen kutusuna iletilir. Giden postalar Resend üzerinden gider. (`server/index.js` içindeki `POST /api/mail/inbound` ucu, ileride Resend Inbound'a geçilmek istenirse `INBOUND_WEBHOOK_SECRET` tanımlanınca çalışır; şu an kapalıdır.)
