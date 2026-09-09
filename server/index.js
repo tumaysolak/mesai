@@ -96,6 +96,17 @@ export function createApp({
     });
   });
   app.get("/api/state", (req, res) => res.json(engine.state()));
+  app.get("/api/reports", (req, res) =>
+    res.json({ reports: engine.reportList(Number(req.query.limit) || 60) }),
+  );
+  app.get("/api/reports/:day", (req, res) => {
+    const day = Number(req.params.day);
+    if (!Number.isInteger(day) || day < 1)
+      return res.status(400).json({ error: "Geçersiz gün." });
+    const report = engine.reportDay(day);
+    if (!report) return res.status(404).json({ error: "Bu güne ait rapor yok." });
+    res.json(report);
+  });
   app.get("/api/artifacts/:id/preview", (req, res) => {
     const artifact = engine.artifact(req.params.id);
     if (!artifact || artifact.type !== "html")
@@ -231,6 +242,20 @@ export function createApp({
         console.error("Manual shift failed; durable recovery will retry."),
       );
     res.status(202).json({ accepted: true });
+  });
+  app.post("/api/admin/reset", owner, (req, res) => {
+    const startDate = req.body?.startDate;
+    if (startDate !== undefined && !/^\d{4}-\d{2}-\d{2}$/.test(String(startDate)))
+      return res
+        .status(400)
+        .json({ error: "startDate YYYY-MM-DD biçiminde olmalı." });
+    if (engine.busy)
+      return res.status(409).json({ error: "Bir mesai devam ediyor." });
+    try {
+      res.json(engine.reset({ startDate }));
+    } catch (error) {
+      res.status(409).json({ error: error.message });
+    }
   });
   app.post("/api/admin/pause", owner, (req, res) => {
     if (typeof req.body?.paused !== "boolean")

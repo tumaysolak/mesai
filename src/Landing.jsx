@@ -189,6 +189,13 @@ export default function Landing({ data, goToPanel }) {
             </article>
           ))}
         </div>
+        <p className="lp-sub">
+          Sabah yazılan plan ve akşam kapanan gün sonu raporu her mesai için
+          siteye kaydedilir; geçmiş günlerin tamamı arşivde açık durur.{" "}
+          <button className="lp-inline-link" onClick={goToPanel}>
+            Günlük raporları gör
+          </button>
+        </p>
       </section>
 
       <section className="lp-section lp-dark" id="ciktilar">

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import Landing from "./Landing.jsx";
 import Markdown from "./Markdown.jsx";
+import Reports from "./Reports.jsx";
 import { Ledger, MailSignup, Organic, VisitorTask } from "./Community.jsx";
 import Portrait from "./Portrait.jsx";
 import {
@@ -10,6 +11,7 @@ import {
   ArrowUpRight,
   BarChart3,
   BrainCircuit,
+  CalendarDays,
   Check,
   CheckCheck,
   ChevronRight,
@@ -77,6 +79,7 @@ const NAV = [
   { id: "decisions", label: "Karar odası", icon: GitFork },
   { id: "tasks", label: "İş panosu", icon: CheckCheck },
   { id: "artifacts", label: "Üretilenler", icon: FolderOpen },
+  { id: "reports", label: "Günlük raporlar", icon: CalendarDays },
   { id: "learning", label: "Öğrenme günlüğü", icon: BrainCircuit },
 ];
 const number = (value) =>
@@ -2253,6 +2256,19 @@ export default function App() {
               )}
               {page === "artifacts" && (
                 <Artifacts data={data} openArtifact={setArtifactModal} />
+              )}
+              {page === "reports" && (
+                <>
+                  <SectionHeading
+                    eyebrow="GÜNLÜK RAPORLAR"
+                    title="Her mesainin sabahı ve akşamı burada duruyor."
+                    description="Sabah 08.15'te yazılan plan ve 17.00'de kapanan gün sonu raporu her gün için kalıcı olarak arşivleniyor. Abonelere giden e-postaların tamamı bu kayıtlardan çıkar."
+                  />
+                  <Reports
+                    artifacts={data.artifacts}
+                    openArtifact={setArtifactModal}
+                  />
+                </>
               )}
               {page === "learning" && (
                 <Learning data={data} openAgent={setAgentModal} />

@@ -737,21 +737,23 @@ test("a scheduled shift walks the clock from 08.00 to 17.00 and mails at each st
 
   assert.equal((await engine.tick()).completed, false);
   assert.match(engine.state().runtime.phase, /08\.00/);
-  assert.equal(sent.length, 0, "08.00'da henüz posta yok");
+  // the first shift of a company opens with its founding story
+  assert.equal(sent.length, 1, "08.00'da kuruluş hikayesi gider");
+  assert.match(sent[0][0].subject, /birinci mesai/);
 
   clock = new Date("2026-09-14T05:15:00Z"); // 08:15 daily
   assert.equal((await engine.tick()).completed, false);
   assert.match(engine.state().runtime.phase, /toplantı/);
-  assert.equal(sent.length, 1);
-  assert.match(sent[0][0].subject, /bugünün planı/);
-  assert.match(sent[0][0].html, /Günlük toplantıda/);
+  assert.equal(sent.length, 2);
+  assert.match(sent[1][0].subject, /bugünün planı/);
+  assert.match(sent[1][0].html, /Günlük toplantıda/);
   assert.ok(engine.state().events.some((e) => e.type === "daily"));
   assert.ok(engine.state().events.some((e) => e.type === "plan"));
 
   clock = new Date("2026-09-14T08:00:00Z"); // 11:00 board
   assert.equal((await engine.tick()).completed, false);
-  assert.equal(sent.length, 2);
-  assert.match(sent[1][0].subject, /karar verildi/);
+  assert.equal(sent.length, 3);
+  assert.match(sent[2][0].subject, /karar verildi/);
   assert.equal(engine.state().decisions.length > 0, true);
 
   clock = new Date("2026-09-14T10:30:00Z"); // 13:30 production
@@ -760,13 +762,55 @@ test("a scheduled shift walks the clock from 08.00 to 17.00 and mails at each st
 
   clock = new Date("2026-09-14T14:00:00Z"); // 17:00 close
   assert.equal((await engine.tick()).completed, true);
-  assert.equal(sent.length, 3);
-  assert.match(sent[2][0].subject, /mesai bitti/);
+  assert.equal(sent.length, 4);
+  assert.match(sent[3][0].subject, /mesai bitti/);
   assert.equal(engine.state().artifacts.length, 5);
   assert.equal(engine.state().runtime.status, "idle");
   // the same day never mails twice, even if the shift is re-entered
   assert.equal((await engine.tick()).reason, "duplicate");
-  assert.equal(sent.length, 3);
+  assert.equal(sent.length, 4);
+  // both halves of the day are archived for the site
+  const archive = engine.reportList();
+  assert.equal(archive.length, 1);
+  assert.equal(archive[0].day, 1);
+  assert.equal(archive[0].closed, true);
+  const detail = engine.reportDay(1);
+  assert.ok(detail.plan.length > 0, "sabah planı arşivde");
+  assert.match(detail.report, /gün sonu raporu/);
+  assert.ok(detail.summary.work.length > 0);
+});
+
+test("a reset closes the company and re-opens it on the chosen morning", async (t) => {
+  let clock = new Date("2026-09-14T10:00:00Z");
+  const dir = await mkdtemp(join(tmpdir(), "mesai-reset-"));
+  t.after(() => rm(dir, { recursive: true, force: true }));
+  const databasePath = join(dir, "reset.db");
+  const engine = engineFor(t, {
+    databasePath,
+    clock: () => clock,
+    bootstrap: true,
+  });
+  await engine.ready;
+  assert.ok(engine.state().company.day >= 1);
+  const after = engine.reset({ startDate: "2026-09-16" });
+  assert.equal(after.company.day, 0);
+  assert.equal(after.config.startDate, "2026-09-16");
+  assert.equal(after.artifacts.length, 0);
+  assert.equal(after.decisions.length, 0);
+  assert.match(after.runtime.nextRunAt, /^2026-09-16T05:00/);
+  // the day before the opening nothing runs, not even the bootstrap shift
+  clock = new Date("2026-09-15T09:00:00Z");
+  assert.equal((await engine.tick()).reason, "before_start");
+  assert.equal(engine.state().company.day, 0);
+  // on the opening morning the first shift starts as day one
+  clock = new Date("2026-09-16T05:00:00Z");
+  assert.equal((await engine.tick()).started, true);
+  clock = new Date("2026-09-16T05:15:00Z");
+  await engine.tick();
+  const opened = engine.reportList();
+  assert.equal(opened[0].day, 1);
+  assert.equal(opened[0].date, "2026-09-16");
+  assert.equal(opened[0].closed, false);
 });
 
 test("the world outside the company moves and the market model feels it", () => {

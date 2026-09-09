@@ -4320,3 +4320,229 @@ a.lp-file:hover {
     grid-template-columns: 1fr;
   }
 }
+
+/* ---- Günlük rapor arşivi */
+.reports-layout {
+  display: grid;
+  grid-template-columns: 244px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+.report-index {
+  position: sticky;
+  top: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 16px 14px;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+}
+.report-row {
+  display: grid;
+  gap: 2px;
+  text-align: left;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  padding: 10px 11px;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.report-row:hover {
+  background: #f2f4ec;
+}
+.report-row-active {
+  background: #eef3e2;
+  border-color: #cfdcb4;
+}
+.report-row strong {
+  font-size: 14px;
+}
+.report-row span {
+  font-size: 11px;
+  color: var(--muted);
+}
+.report-row small {
+  font-size: 12px;
+  color: #5f6d5e;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.report-row em {
+  font-style: normal;
+  font-size: 10.5px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.report-row em.ok {
+  color: #3f7a45;
+}
+.report-row em.no {
+  color: #a8622f;
+}
+.report-row em.live {
+  color: #6f7a6c;
+}
+.report-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  min-width: 0;
+}
+.report-head h2 {
+  font-size: 26px;
+  line-height: 1.25;
+  margin: 6px 0 8px;
+}
+.report-head p {
+  color: var(--muted);
+  font-size: 13.5px;
+  margin: 0;
+}
+.report-block {
+  padding: 20px 22px 22px;
+}
+.report-block .panel-heading > div {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.report-time {
+  font-size: 11.5px;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+.report-plan {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 6px;
+}
+.report-plan th {
+  text-align: left;
+  vertical-align: top;
+  padding: 10px 14px 10px 0;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+  font-size: 13.5px;
+}
+.report-plan th small {
+  display: block;
+  font-weight: 400;
+  font-size: 11px;
+  color: var(--muted);
+}
+.report-plan td {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: #3d4c40;
+}
+.report-figures {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  gap: 10px;
+  margin: 8px 0 16px;
+}
+.report-figures > div {
+  background: #f4f6ee;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 11px 13px;
+  display: grid;
+  gap: 3px;
+}
+.report-figures span {
+  font-size: 11.5px;
+  color: var(--muted);
+}
+.report-figures strong {
+  font-size: 16px;
+}
+.report-figures .plus {
+  color: #3f7a45;
+}
+.report-figures .minus {
+  color: #a8622f;
+}
+.report-lesson {
+  background: #eef3e2;
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 13.5px;
+  line-height: 1.65;
+  margin: 0 0 14px;
+}
+.report-muted {
+  color: var(--muted);
+  font-size: 13.5px;
+  line-height: 1.7;
+  margin: 4px 0 0;
+}
+.report-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.report-error {
+  background: #fbeee6;
+  border: 1px solid #eccfb6;
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 13px;
+}
+.report-files {
+  display: grid;
+  gap: 6px;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+.report-file {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 9px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  text-align: left;
+}
+.report-file:hover {
+  background: #f2f4ec;
+}
+.report-file span {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (max-width: 900px) {
+  .reports-layout {
+    grid-template-columns: 1fr;
+  }
+  .report-index {
+    position: static;
+    max-height: 300px;
+  }
+}
+.lp-inline-link {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: var(--green);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}

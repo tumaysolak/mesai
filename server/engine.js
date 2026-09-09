@@ -52,8 +52,10 @@ export function phaseTime(date, phase) {
   const step = SHIFT_PLAN[Math.min(phase, SHIFT_PLAN.length - 1)];
   return new Date(`${date}T${step.at}:00+03:00`);
 }
-export function nextScheduledRun(now = new Date()) {
+export function nextScheduledRun(now = new Date(), startDate = null) {
   const date = new Date(now);
+  if (startDate && localDate(date) < startDate)
+    return new Date(`${startDate}T08:00:00+03:00`).toISOString();
   const today = new Date(`${localDate(date)}T08:00:00+03:00`);
   if (today <= date) today.setUTCDate(today.getUTCDate() + 1);
   return today.toISOString();
@@ -318,7 +320,13 @@ function initialState() {
         unlocked: false,
       },
     ],
-    config: { scheduleHour: 8, timezone: TZ, autonomous: true },
+    config: {
+      scheduleHour: 8,
+      timezone: TZ,
+      autonomous: true,
+      // The company may be reset; it then stays closed until this date at 08.00.
+      startDate: null,
+    },
     learning: {},
     dynamicStrategies: [],
     totalArtifacts: 0,
@@ -650,6 +658,7 @@ export function createEngine(options = {}) {
     CREATE TABLE IF NOT EXISTS visitor_quota (fingerprint TEXT NOT NULL, date TEXT NOT NULL, count INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (fingerprint, date));
     CREATE TABLE IF NOT EXISTS mail_log (email TEXT NOT NULL, day INTEGER NOT NULL, kind TEXT NOT NULL, sent_at TEXT NOT NULL, PRIMARY KEY (email, day, kind));
     CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS reports (day INTEGER PRIMARY KEY, date TEXT NOT NULL, focus TEXT NOT NULL DEFAULT '', work TEXT NOT NULL DEFAULT '', plan TEXT NOT NULL DEFAULT '[]', report TEXT NOT NULL DEFAULT '', summary TEXT NOT NULL DEFAULT '{}', started_at TEXT NOT NULL, closed_at TEXT);
     CREATE TABLE IF NOT EXISTS subscribers (email TEXT PRIMARY KEY, token TEXT NOT NULL, status TEXT NOT NULL, created_at TEXT NOT NULL, confirmed_at TEXT, last_sent_day INTEGER NOT NULL DEFAULT 0);`);
   const clock = options.clock || options.now || (() => new Date());
   const now = () => new Date(typeof clock === "function" ? clock() : clock);
@@ -691,7 +700,7 @@ export function createEngine(options = {}) {
     const s = JSON.parse(
       db.prepare("SELECT data FROM snapshots WHERE id=1").get().data,
     );
-    s.runtime.nextRunAt = nextScheduledRun(now());
+    s.runtime.nextRunAt = nextScheduledRun(now(), s.config.startDate);
     const active = db
       .prepare("SELECT phase,context FROM runs WHERE status='running' LIMIT 1")
       .get();
@@ -982,6 +991,10 @@ export function createEngine(options = {}) {
             `${a.name} ofise geldi. ${a.memories.length ? `Son öğrenimini hatırlıyor: ${a.memories[0].lesson}` : "İlk görev: varsayımları görünür kılmak."}`,
           );
         persistPhase(1);
+        if (context.day === 1)
+          await deliverStory(context).catch(() =>
+            console.error("Story mail failed; the shift continues."),
+          );
         await wait(delay);
       }
       if (startingPhase <= 1) {
@@ -1005,6 +1018,7 @@ export function createEngine(options = {}) {
         );
         for (const item of context.plan)
           event(context, item.agentId, "plan", `Bugünkü işim: ${item.line}`);
+        archivePlan(context);
         persistPhase(2);
         await deliverPlan(context).catch(() =>
           console.error("Plan mail failed; the shift continues."),
@@ -1826,6 +1840,7 @@ export function createEngine(options = {}) {
           context.day,
           JSON.stringify(history),
         );
+        archiveReport(context, report.content);
         for (const achievement of current.achievements) {
           const condition = {
             first: context.day >= 1,
@@ -1995,6 +2010,127 @@ export function createEngine(options = {}) {
       inFlight = null;
     }
   }
+  // ---- daily archive: the morning plan and the closing report survive on the site
+  function archivePlan(context) {
+    db.prepare(
+      "INSERT INTO reports(day,date,focus,plan,started_at) VALUES(?,?,?,?,?) " +
+        "ON CONFLICT(day) DO UPDATE SET date=excluded.date,focus=excluded.focus,plan=excluded.plan,started_at=excluded.started_at",
+    ).run(
+      context.day,
+      context.date || localDate(now()),
+      current.company.focus,
+      JSON.stringify(
+        (context.plan || []).map((item) => ({
+          name: item.name,
+          role: item.role,
+          line: item.line,
+        })),
+      ),
+      now().toISOString(),
+    );
+  }
+  function archiveReport(context, markdown) {
+    const entry = (current.ledger || []).find((e) => e.day === context.day) || {};
+    const decision = (current.decisions || []).find(
+      (d) => d.day === context.day,
+    );
+    const summary = {
+      work: context.strategy?.title || entry.work || "",
+      condition: entry.condition || current.company.condition,
+      success: Boolean(entry.success),
+      net: entry.net ?? 0,
+      cash: entry.cash ?? current.company.cash,
+      pilotRevenue: entry.pilotRevenue ?? 0,
+      retainer: entry.retainer ?? 0,
+      experimentCost: entry.experimentCost ?? 0,
+      payroll: entry.payroll ?? 0,
+      customers: entry.customers ?? current.company.customers,
+      headcount: entry.headcount ?? current.agents.length,
+      lesson: context.lesson || "",
+      decision: decision ? decision.title : "",
+      votes: decision
+        ? {
+            yes: (decision.votes || []).filter((v) => v.vote === "yes").length,
+            total: (decision.votes || []).length,
+          }
+        : null,
+      artifacts: (current.artifacts || [])
+        .filter((a) => a.day === context.day)
+        .map((a) => ({ id: a.id, title: a.title, type: a.type })),
+    };
+    db.prepare(
+      "INSERT INTO reports(day,date,focus,work,plan,report,summary,started_at,closed_at) VALUES(?,?,?,?,'[]',?,?,?,?) " +
+        "ON CONFLICT(day) DO UPDATE SET focus=excluded.focus,work=excluded.work,report=excluded.report,summary=excluded.summary,closed_at=excluded.closed_at",
+    ).run(
+      context.day,
+      context.date || localDate(now()),
+      current.company.focus,
+      summary.work,
+      markdown,
+      JSON.stringify(summary),
+      now().toISOString(),
+      now().toISOString(),
+    );
+    db.exec("DELETE FROM reports WHERE day < (SELECT MAX(day)-120 FROM reports)");
+  }
+  function reportList(limit = 60) {
+    return db
+      .prepare(
+        "SELECT day,date,focus,work,plan,summary,started_at,closed_at FROM reports ORDER BY day DESC LIMIT ?",
+      )
+      .all(Math.min(Math.max(Number(limit) || 60, 1), 120))
+      .map((row) => {
+        const summary = JSON.parse(row.summary || "{}");
+        return {
+          day: row.day,
+          date: row.date,
+          focus: row.focus,
+          work: row.work || summary.work || "",
+          planCount: (JSON.parse(row.plan || "[]") || []).length,
+          closed: Boolean(row.closed_at),
+          success: summary.success ?? null,
+          net: summary.net ?? null,
+          cash: summary.cash ?? null,
+          lesson: summary.lesson || "",
+        };
+      });
+  }
+  function reportDay(day) {
+    const row = db.prepare("SELECT * FROM reports WHERE day=?").get(Number(day));
+    if (!row) return null;
+    return {
+      day: row.day,
+      date: row.date,
+      focus: row.focus,
+      work: row.work,
+      plan: JSON.parse(row.plan || "[]"),
+      report: row.report || "",
+      summary: JSON.parse(row.summary || "{}"),
+      startedAt: row.started_at,
+      closedAt: row.closed_at,
+    };
+  }
+  // ---- reset: the company closes down and re-opens from day one on a chosen date
+  function reset(options = {}) {
+    if (inFlight) throw new Error("Bir mesai devam ederken sıfırlama yapılamaz.");
+    const startDate =
+      typeof options.startDate === "string" &&
+      /^\d{4}-\d{2}-\d{2}$/.test(options.startDate)
+        ? options.startDate
+        : null;
+    db.exec(
+      "DELETE FROM runs; DELETE FROM artifacts; DELETE FROM history; DELETE FROM llm_cache;" +
+        "DELETE FROM reports; DELETE FROM mail_log; DELETE FROM visitor_work; DELETE FROM visitor_quota;",
+    );
+    db.prepare("UPDATE subscribers SET last_sent_day=0").run();
+    current = initialState();
+    current.config.startDate = startDate;
+    current.runtime.phase = startDate
+      ? `Şirket ${startDate} sabahı 08.00'de açılıyor`
+      : "İlk mesai hazırlanıyor";
+    save();
+    return state();
+  }
   function pause(paused) {
     current = migrate(
       JSON.parse(db.prepare("SELECT data FROM snapshots WHERE id=1").get().data),
@@ -2014,6 +2150,8 @@ export function createEngine(options = {}) {
     const s = state();
     if (!s.config.autonomous) return { started: false, reason: "paused" };
     const date = localDate(now());
+    if (s.config.startDate && date < s.config.startDate)
+      return { started: false, reason: "before_start" };
     if (now() < new Date(`${date}T08:00:00+03:00`))
       return { started: false, reason: "before_schedule" };
     return run({ key: `schedule:${date}`, kind: "scheduled" });
@@ -2138,6 +2276,41 @@ export function createEngine(options = {}) {
   }
   const moneyText = (value) =>
     `${new Intl.NumberFormat("tr-TR").format(Math.round(value))} TL`;
+
+  // The first shift of a new company opens with its founding story.
+  function storyText(day) {
+    const roster = current.agents
+      .map((a) => `${a.name} (${a.role})`)
+      .join(", ");
+    return [
+      `Bugün ${day}. mesai değil, birinci mesai. Şirket bu sabah sıfırdan açıldı: kasada ${moneyText(current.company.cash)}, kadroda ${current.agents.length} kişi, elde tek bir müşteri yok.`,
+      `Kuruluş fikri basit: bir şirketin bütün kararlarını, gerekçeleriyle ve masrafıyla birlikte açıkta tutmak. ${current.company.mission}`,
+      `İlk faaliyet alanı ${current.company.focus}. Bu alan sabit değil; ekip üst üste sonuç alamazsa kendi kararıyla başka bir alana geçebilir, ürün hattını kapatabilir, yeni insan alabilir ya da küçülebilir.`,
+      `Kurucu kadro: ${roster}. Her sabah 08.00'de gelirler, 08.15'te günlük toplantıyı yapıp bugün ne yapacaklarını yazarlar, öğleye doğru oylayarak bir iş seçerler, öğleden sonra dosyayı üretirler ve 17.00'de günün ne kazandırdığını, ne maliyet çıkardığını yazıp çıkarlar.`,
+      `Bu ilk gün kimse kimseyi tanımıyor: hafızalar boş, ders defteri boş, itibar ${current.company.reputation}. Bundan sonrası şirketin kendi hikayesi — ve sen ilk günden itibaren içindesin.`,
+    ];
+  }
+  async function deliverStory(context) {
+    const people = recipients(context.day, "story");
+    if (!people.length) return { sent: 0, reason: "no_subscribers" };
+    const body = `${storyText(context.day)
+      .map(
+        (line) =>
+          `<p style="font-size:15px;line-height:1.75">${escapeMail(line)}</p>`,
+      )
+      .join("")}
+<p style="font-size:13px;color:#7a847b">Bugünün planı birazdan ayrı bir e-postayla gelecek; gün sonu raporu 17.00'de. Bütün raporlar ayrıca sitede arşivleniyor.</p>
+<p><a href="${publicUrl}/panel#reports" style="display:inline-block;background:#263f2c;color:#f6f7ee;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600">Şirketin ilk gününü izle</a></p>`;
+    const result = await sendMails(
+      people.map((person) => ({
+        to: person.email,
+        subject: "MESAI kuruldu: bugün birinci mesai",
+        html: mailShell("Bir şirket açıldı", body, person.token),
+      })),
+    );
+    if (result.sent) markSent(context.day, "story", people);
+    return result;
+  }
 
   async function deliverPlan(context) {
     const people = recipients(context.day, "plan");
@@ -2429,6 +2602,10 @@ ${against ? `<p style="font-size:13px;color:#7a847b">Karşı görüşler:</p><ul
     visitorStatus,
     subscribe,
     deliverPlan,
+    deliverStory,
+    reportList,
+    reportDay,
+    reset,
     confirmSubscriber,
     unsubscribe,
     subscriberCount,
@@ -2440,8 +2617,11 @@ ${against ? `<p style="font-size:13px;color:#7a847b">Karşı görüşler:</p><ul
       return clone(current.learning);
     },
   };
+  const waitingForStart = () =>
+    Boolean(current.config.startDate) &&
+    localDate(now()) < current.config.startDate;
   engine.ready =
-    options.bootstrap === false
+    options.bootstrap === false || waitingForStart()
       ? Promise.resolve()
       : current.company.day === 0
         ? run({ key: `schedule:${localDate(now())}`, kind: "bootstrap" })
