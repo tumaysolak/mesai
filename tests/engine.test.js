@@ -15,6 +15,8 @@ import {
   migrate,
   conditionFor,
   creditLimitOf,
+  slugify,
+  makeProductPage,
   CONDITIONS,
 } from "../server/engine.js";
 import { CANDIDATES, PERSONAS, STRATEGIES } from "../server/personas.js";
@@ -294,7 +296,9 @@ test("AI council uses role-specific prompts, structured Responses output and pri
     fetchImpl: aiMock(calls),
   });
   await engine.run({ key: "ai-1" });
-  assert.equal(calls.length, 10);
+  // 8 council seats, the document, the retrospective and — when a line opens — the launch page
+  assert.ok(calls.length === 10 || calls.length === 11, `beklenmeyen çağrı: ${calls.length}`);
+  const first = calls.length;
   assert.equal(engine.state().runtime.mode, "ai");
   const council = calls.slice(0, 8);
   assert.equal(
@@ -308,7 +312,7 @@ test("AI council uses role-specific prompts, structured Responses output and pri
     assert.equal(call.headers.Authorization, `Bearer ${secret}`);
   }
   await engine.run({ key: "ai-2" });
-  const secondCouncil = calls.slice(10, 18);
+  const secondCouncil = calls.slice(first, first + 8);
   assert.ok(
     secondCouncil.every(
       (call) => JSON.parse(call.body.input[1].content).memories.length > 0,
@@ -1019,4 +1023,63 @@ test("the product page teaser hides what the panel shows", async (t) => {
   assert.equal(engine.hasAccess(granted.token), true);
   assert.equal(engine.hasAccess("uydurma"), false);
   assert.equal(engine.hasAccess(""), false);
+});
+
+test("a winning line becomes a live product page the company wrote itself", async (t) => {
+  const dir = await mkdtemp(join(tmpdir(), "mesai-launch-"));
+  t.after(() => rm(dir, { recursive: true, force: true }));
+  const engine = engineFor(t, {
+    databasePath: join(dir, "launch.db"),
+    bootstrap: true,
+  });
+  await engine.ready;
+  const state = engine.state();
+  const live = (state.products || []).filter((p) => p.status === "active");
+  const sites = engine.siteList();
+  if (live.length) {
+    assert.ok(sites.length > 0, "kazanan hat için sayfa açılmalı");
+    const page = engine.site(sites[0].slug);
+    assert.ok(page, "sayfa yayında olmalı");
+    assert.match(page.html, /<!doctype html>/i);
+    assert.doesNotMatch(page.html, /<script/i, "sayfada script olmamalı");
+    assert.match(page.html, /simülasyon/i, "sınır uyarısı sayfada kalmalı");
+    assert.ok(state.sites.some((x) => x.slug === sites[0].slug));
+    assert.ok(
+      engine.postFeed().some((p) => p.kind === "launch"),
+      "lansman gönderisi yazılmalı",
+    );
+  }
+  // every shift leaves a note in the company's own feed
+  const feed = engine.postFeed();
+  assert.ok(feed.length > 0);
+  assert.ok(feed.some((p) => p.kind === "daily"));
+  assert.ok(feed[0].author && feed[0].day >= 1);
+  // the teaser carries the marketing surface too
+  const teaser = engine.publicState();
+  assert.ok(Array.isArray(teaser.sites));
+  assert.ok(Array.isArray(teaser.posts));
+});
+
+test("product slugs are url safe and the page carries the company's own words", () => {
+  assert.equal(slugify("Şarj İstasyonu Fizibilitesi", 4), "sarj-istasyonu-fizibilitesi-4");
+  assert.equal(slugify("", 2), "urun-2");
+  const html = makeProductPage({
+    product: { id: "x", title: "Test Ürünü", field: "Enerji", customers: 3, price: 4000 },
+    strategy: { segment: "KOBİ", price: 4000 },
+    copy: {
+      tagline: "Tek cümlelik anlatım",
+      problem: "Sorun",
+      how: "Nasıl",
+      audience: "Kim",
+      steps: ["a", "b"],
+      benefits: [{ title: "Fayda", text: "Metin" }],
+    },
+    company: { name: "MESAI Labs" },
+    day: 5,
+    site: "https://mesailabs.com/u/test-urunu-5",
+  });
+  assert.match(html, /Test Ürünü/);
+  assert.match(html, /Tek cümlelik anlatım/);
+  assert.match(html, /5\. mesaide/);
+  assert.doesNotMatch(html, /<script/i);
 });

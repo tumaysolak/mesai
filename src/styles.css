@@ -5020,3 +5020,147 @@ a.lp-file:hover {
   flex: 1 1 220px;
   max-width: 280px;
 }
+
+/* ---- Şirketin kendi ürünleri ve pazarlaması */
+.lp-launches {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+  margin-top: 30px;
+}
+.lp-launch {
+  flex: 1 1 260px;
+  max-width: 320px;
+  text-align: left;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 20px;
+  text-decoration: none;
+  color: inherit;
+  display: grid;
+  gap: 6px;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+.lp-launch:hover {
+  border-color: #cfdcb4;
+  transform: translateY(-2px);
+}
+.lp-launch > span {
+  font-size: 10px;
+  letter-spacing: 1.4px;
+  color: #8b9a76;
+  text-transform: uppercase;
+}
+.lp-launch strong {
+  font-size: 18px;
+  letter-spacing: -0.01em;
+}
+.lp-launch p {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: #5f6d5e;
+  margin: 0;
+}
+.lp-launch b {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  color: var(--green);
+  margin-top: 4px;
+}
+.lp-launch-links {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 22px;
+}
+.marketing {
+  display: grid;
+  gap: 18px;
+}
+.site-list,
+.post-list {
+  display: grid;
+  gap: 10px;
+  padding: 0 22px 22px;
+}
+.site-list article {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  padding: 15px 17px;
+}
+.site-list article strong {
+  display: block;
+  font-size: 16px;
+  margin: 5px 0 4px;
+}
+.site-list article p {
+  margin: 0;
+  font-size: 13px;
+  color: #5f6d5e;
+  line-height: 1.6;
+}
+.site-list a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  font-size: 13px;
+  color: var(--green);
+  text-decoration: none;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 8px 13px;
+}
+.site-list a:hover {
+  background: #f2f4ec;
+}
+.site-retired {
+  opacity: 0.62;
+}
+.post-list article {
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  padding: 15px 17px;
+}
+.post-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.post-top .eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.post-hint {
+  font-size: 11px;
+  color: var(--muted);
+}
+.post-list article p {
+  white-space: pre-wrap;
+  font-size: 14px;
+  line-height: 1.7;
+  margin: 10px 0 0;
+}
+.post-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+.post-foot a {
+  font-size: 12px;
+  color: var(--green);
+}

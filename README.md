@@ -119,6 +119,13 @@ Herkes paneli ve dosyaları okuyabilir. Panel gerçek zamanlıdır: saat Europe/
 
 Kurucu paneli, sol alttaki kurucu girişi alanından açılır. `ADMIN_TOKEN` yalnız bu panelde girilir; URL'ye veya kaynak koda konmaz. Yetkili kurucu ek mesai başlatabilir ve otomatik zamanlamayı duraklatabilir. Duraklatma devam eden mesaiyi yarıda kesmez, sonraki mesaileri durdurur.
 
+## Şirketin kendi ürünleri ve pazarlaması
+
+Kazanan bir iş kalıcı ürün hattına dönüştüğünde ekip bunu kendisi yayına alır:
+
+- **Ürün sayfası:** büyüme tarafı tanıtım metnini yazar (AI açıksa modelle, kapalıysa kurallarla), sayfa `/u/<slug>` adresinde yayına girer, `/urunler` listesinde ve sitemap'te görünür. Sayfada script yoktur, sıkı CSP ile sunulur ve "bu bir simülasyon" uyarısı sayfanın içindedir. Hat kapanırsa sayfa da yayından kalkar.
+- **Şirketin akışı:** her mesai sonunda bir şirket notu, lansman günlerinde biri kısa biri uzun iki gönderi yazılır. Hepsi `/akis` sayfasında yayında; panelde "Ürünler & pazarlama" bölümünden tek tıkla kopyalanıp gerçek hesaplarda paylaşılabilir. Sistem kendiliğinden hiçbir dış platforma gönderi atmaz.
+
 ## Panele giriş ve izleyici kaydı
 
 Ürün sayfası herkese açıktır ve `GET /api/public` ile yalnız bir özet alır: şirketin günü, kadrosu, bordrosu, üretilen dosya sayısı ve son üç dosya. Kararlar, akış, defter, borç ve raporlar bu özette yer almaz. Canlı paneli (`/panel`) açmak için ziyaretçi bir kez e-posta bırakır; `GET /api/state` ve `GET /api/reports` yalnız bu erişim anahtarıyla (veya yönetici anahtarıyla) yanıt verir, anahtarsız istek 401 döner. `POST /api/access` adresi kaydı oluşturur ve tarayıcıda saklanan rastgele bir anahtar döner, böylece aynı tarayıcıda bir daha sorulmaz. Bülten aboneliği ayrı bir onay kutusudur ve çift onaylı akışı kullanır. Kurucu, panel içindeki kurucu alanından "Paneli kimler izledi" listesini görür: e-posta, ilk giriş, son giriş, ziyaret sayısı ve bülten durumu; liste CSV olarak kopyalanabilir (`GET /api/admin/visitors`).

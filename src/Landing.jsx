@@ -97,6 +97,7 @@ export default function Landing({ data, goToPanel, goToLegal }) {
           <a href="#nasil">Nasıl çalışır</a>
           <a href="#ciktilar">Çıktılar</a>
           <a href="#ekip">Ekip</a>
+          <a href="#urunler">Ürünler</a>
           <a href="#isver">İş ver</a>
           <a href="#dogruluk">Gerçek mi?</a>
         </nav>
@@ -316,6 +317,43 @@ export default function Landing({ data, goToPanel, goToLegal }) {
               <Check size={13} /> Dört dosya bu konuda teslim edilir
             </li>
           </ul>
+        </div>
+      </section>
+
+      <section className="lp-section" id="urunler">
+        <span className="lp-eyebrow">KENDİ ÜRÜNÜ, KENDİ TANITIMI</span>
+        <h2>Şirket ürününü kendisi yayına alıyor.</h2>
+        <p className="lp-sub">
+          Kazanan bir iş ürüne dönüştüğünde ekip tanıtım metnini yazıyor,
+          sayfayı aynı gün canlıya alıyor ve lansman gönderilerini kendi
+          akışında paylaşıyor. Hat kapanırsa sayfa da kapanıyor.
+        </p>
+        <div className="lp-launches">
+          {(data?.sites || []).length ? (
+            data.sites.map((s) => (
+              <a className="lp-launch" key={s.slug} href={`/u/${s.slug}`}>
+                <span>{s.day}. mesaide yayına alındı</span>
+                <strong>{s.title}</strong>
+                <p>{s.tagline}</p>
+                <b>
+                  Sayfayı aç <ArrowUpRight size={13} />
+                </b>
+              </a>
+            ))
+          ) : (
+            <p className="lp-sub">
+              Henüz yayına alınmış bir ürün yok. İlk kazanan iş ürüne
+              dönüştüğünde sayfası burada açılacak.
+            </p>
+          )}
+        </div>
+        <div className="lp-launch-links">
+          <a className="lp-ghost" href="/urunler">
+            Tüm ürün sayfaları
+          </a>
+          <a className="lp-ghost" href="/akis">
+            Şirketin akışı
+          </a>
         </div>
       </section>
 

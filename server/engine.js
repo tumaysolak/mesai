@@ -585,6 +585,82 @@ export function makeDayReport(context, state) {
   };
 }
 
+export function slugify(value, day) {
+  const map = {
+    ç: "c", Ç: "c", ğ: "g", Ğ: "g", ı: "i", I: "i", İ: "i",
+    ö: "o", Ö: "o", ş: "s", Ş: "s", ü: "u", Ü: "u",
+  };
+  const base = String(value || "urun")
+    .replace(/[çÇğĞıIİöÖşŞüÜ]/g, (c) => map[c] || c)
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 48);
+  return `${base || "urun"}-${day}`;
+}
+
+// The company publishes its own product pages: a real, crawlable page per live product.
+export function makeProductPage({ product, strategy, copy, company, day, site }) {
+  const e = (v) =>
+    String(v ?? "").replace(
+      /[&<>"']/g,
+      (c) =>
+        ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c],
+    );
+  const benefits = (copy.benefits || []).slice(0, 3);
+  const price = Number(strategy?.price || product.price || 0);
+  return `<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${e(product.title)} · ${e(company.name)}</title>
+<meta name="description" content="${e(copy.tagline)}">
+<meta property="og:title" content="${e(product.title)} · ${e(company.name)}">
+<meta property="og:description" content="${e(copy.tagline)}">
+<meta property="og:type" content="product">
+<link rel="canonical" href="${e(site)}">
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#f5f5f0;color:#24322b;font:17px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif}
+main{max-width:900px;margin:auto;padding:34px 24px 70px}
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;border-bottom:1px solid #e2e6dc;padding-bottom:18px;font-size:13px}
+.brand{font-weight:800;letter-spacing:.12em}
+.brand i{font-style:normal;color:#6f9a4b}
+.top a{color:#466749}
+.pill{display:inline-block;background:#e6edcf;border:1px solid #d4ddbc;color:#4d6440;padding:7px 13px;border-radius:30px;font-size:11px;letter-spacing:.09em;text-transform:uppercase}
+h1{font-size:clamp(32px,5.4vw,54px);line-height:1.08;letter-spacing:-.04em;margin:22px 0 14px}
+.lead{font-size:20px;line-height:1.6;color:#3d4c40;max-width:640px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;margin:34px 0}
+.card{background:#fffefa;border:1px solid #e2e6dc;border-radius:16px;padding:22px}
+.card h3{margin:0 0 8px;font-size:17px}
+.card p{margin:0;font-size:14.5px;line-height:1.65;color:#4a5a4c}
+.block{background:#fffefa;border:1px solid #e2e6dc;border-radius:16px;padding:24px;margin-bottom:16px}
+.block h2{margin:0 0 10px;font-size:21px}
+ul{padding-left:19px;margin:10px 0 0}
+li{margin-bottom:8px;font-size:15px}
+.note{background:#eef1e5;border-radius:12px;padding:14px 16px;font-size:13px;line-height:1.65;color:#4a5a4c}
+footer{margin-top:34px;border-top:1px solid #e2e6dc;padding-top:20px;font-size:12.5px;color:#7a847b}
+footer a{color:#466749}
+</style></head><body><main>
+<div class="top"><span class="brand">MES<i>AI</i>.</span><a href="https://mesailabs.com/">${e(company.name)} · canlı şirket</a></div>
+<span class="pill" style="margin-top:26px">${e(strategy?.segment || product.field)}</span>
+<h1>${e(product.title)}</h1>
+<p class="lead">${e(copy.tagline)}</p>
+<div class="grid">${benefits
+    .map(
+      (b) =>
+        `<article class="card"><h3>${e(b.title)}</h3><p>${e(b.text)}</p></article>`,
+    )
+    .join("")}</div>
+<section class="block"><h2>Hangi sorunu çözüyor</h2><p>${e(copy.problem)}</p></section>
+<section class="block"><h2>Nasıl çalışıyor</h2><p>${e(copy.how)}</p>
+<ul>${(copy.steps || []).map((x) => `<li>${e(x)}</li>`).join("")}</ul></section>
+<section class="block"><h2>Kim için</h2><p>${e(copy.audience)}</p>
+<p style="margin-top:12px"><b>Modellenen pilot bedeli:</b> ${price.toLocaleString("tr-TR")} simülasyon TL · <b>${product.customers}</b> modellenen müşteri</p></section>
+<p class="note">${e(company.name)} kurgusal bir otonom şirket simülasyonudur. Bu sayfayı şirketin yapay zeka ekibi ${day}. mesaide kendisi yazıp yayına aldı. Fiyat, müşteri ve gelir rakamları sentetiktir; gerçek bir satış, ödeme veya hizmet taahhüdü yoktur.</p>
+<footer>${e(company.name)} · ${day}. mesaide yayına alındı · <a href="https://mesailabs.com/urunler">şirketin diğer ürünleri</a> · <a href="https://mesailabs.com/">şirketi canlı izle</a> · iletisim@mesailabs.com</footer>
+</main></body></html>`;
+}
+
 export function makeJobPosting(candidate, company, day) {
   return {
     title: `${candidate.role} · iş ilanı`,
@@ -692,6 +768,8 @@ export function createEngine(options = {}) {
     CREATE TABLE IF NOT EXISTS visitor_quota (fingerprint TEXT NOT NULL, date TEXT NOT NULL, count INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (fingerprint, date));
     CREATE TABLE IF NOT EXISTS mail_log (email TEXT NOT NULL, day INTEGER NOT NULL, kind TEXT NOT NULL, sent_at TEXT NOT NULL, PRIMARY KEY (email, day, kind));
     CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS sites (slug TEXT PRIMARY KEY, product_id TEXT NOT NULL, day INTEGER NOT NULL, title TEXT NOT NULL, tagline TEXT NOT NULL, html TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'live', created_at TEXT NOT NULL, updated_at TEXT NOT NULL, views INTEGER NOT NULL DEFAULT 0);
+    CREATE TABLE IF NOT EXISTS posts (id TEXT PRIMARY KEY, day INTEGER NOT NULL, agent_id TEXT NOT NULL, channel TEXT NOT NULL, kind TEXT NOT NULL, text TEXT NOT NULL, link TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS access (email TEXT PRIMARY KEY, token TEXT NOT NULL UNIQUE, created_at TEXT NOT NULL, last_seen TEXT NOT NULL, visits INTEGER NOT NULL DEFAULT 1, subscribed INTEGER NOT NULL DEFAULT 0, source TEXT NOT NULL DEFAULT '');
     CREATE TABLE IF NOT EXISTS reports (day INTEGER PRIMARY KEY, date TEXT NOT NULL, focus TEXT NOT NULL DEFAULT '', work TEXT NOT NULL DEFAULT '', plan TEXT NOT NULL DEFAULT '[]', report TEXT NOT NULL DEFAULT '', summary TEXT NOT NULL DEFAULT '{}', started_at TEXT NOT NULL, closed_at TEXT);
     CREATE TABLE IF NOT EXISTS subscribers (email TEXT PRIMARY KEY, token TEXT NOT NULL, status TEXT NOT NULL, created_at TEXT NOT NULL, confirmed_at TEXT, last_sent_day INTEGER NOT NULL DEFAULT 0);`);
@@ -762,6 +840,8 @@ export function createEngine(options = {}) {
       .get(today) || { input: 0, output: 0 };
     s.runtime.tokensToday = spent.input + spent.output;
     s.runtime.costToday = estimateCost(spent);
+    s.sites = siteList(40);
+    s.posts = postFeed(30);
     s.community = {
       subscribers: db
         .prepare(
@@ -1779,6 +1859,7 @@ export function createEngine(options = {}) {
               "product",
               `Yeni ürün hattı açıldı: ${context.strategy.title}. İlk ${context.result.customers} müşteri bu hatta kaydedildi.`,
             );
+            context.launch = current.products[0];
           }
         }
         const stat = current.learning[productKey];
@@ -1793,6 +1874,14 @@ export function createEngine(options = {}) {
         ) {
           failing.status = "retired";
           failing.retiredDay = context.day;
+          const closed = retireSite(failing.id, context.day);
+          if (closed)
+            event(
+              context,
+              "lale",
+              "launch",
+              `${failing.title} sayfası yayından kaldırıldı. Kapanan hattın sayfası açık bırakılmıyor.`,
+            );
           current.company.customers = Math.max(
             0,
             current.company.customers - failing.customers,
@@ -1975,6 +2064,21 @@ export function createEngine(options = {}) {
           JSON.stringify(history),
         );
         archiveReport(context, report.content);
+        // The company markets itself: a launch page when a line opens, a note every day.
+        if (context.launch)
+          await publishProduct(context, context.launch).catch(() =>
+            console.error("Launch page failed; the shift itself is recorded."),
+          );
+        const live = (current.products || []).filter(
+          (x) => x.status === "active",
+        );
+        addPost(context, {
+          agentId: "can",
+          channel: "site",
+          kind: "daily",
+          text: `${context.day}. mesai kapandı. ${context.strategy.title} işi ${context.result.success ? `${context.result.customers} modellenen müşteriye ulaştı` : "sonuç üretmedi"}; günün net etkisi ${(current.ledger[0]?.net ?? 0).toLocaleString("tr-TR")} simülasyon TL, kasa ${current.company.cash.toLocaleString("tr-TR")} TL${current.finance?.debt ? `, açık borç ${current.finance.debt.toLocaleString("tr-TR")} TL` : ""}. Açık ürün hattı: ${live.length}. Günün dersi: ${context.lesson}`,
+          link: `${publicUrl}/panel#reports`,
+        });
         for (const achievement of current.achievements) {
           const condition = {
             first: context.day >= 1,
@@ -2144,6 +2248,193 @@ export function createEngine(options = {}) {
       inFlight = null;
     }
   }
+  // ---- the company publishes itself: product pages and its own marketing feed
+  function addPost(context, { agentId, channel, kind, text, link = "" }) {
+    const clean = cleanText(text, channel === "x" ? 280 : 1200).trim();
+    if (!clean) return null;
+    const id = `${context.id}-p${(context.postCount = (context.postCount || 0) + 1)}`;
+    db.prepare(
+      "INSERT OR REPLACE INTO posts(id,day,agent_id,channel,kind,text,link,created_at) VALUES(?,?,?,?,?,?,?,?)",
+    ).run(
+      id,
+      context.day,
+      agentId,
+      channel,
+      kind,
+      clean,
+      cleanText(link, 300),
+      now().toISOString(),
+    );
+    db.exec("DELETE FROM posts WHERE day < (SELECT MAX(day)-60 FROM posts)");
+    return id;
+  }
+  function fallbackCopy(product, strategy) {
+    return {
+      tagline: `${strategy?.solution || product.title}. ${strategy?.hypothesis ? `Varsayım: ${strategy.hypothesis}` : ""}`.trim(),
+      problem:
+        strategy?.problem ||
+        `${product.field} tarafında ölçülmeyen bir maliyet var; ekip önce onu görünür kılıyor.`,
+      how:
+        strategy?.solution ||
+        "Küçük kapsamlı bir pilot kurulur, tek değişken denenir, sonuç önce-sonra karşılaştırmasıyla yazılır.",
+      audience: strategy?.segment || product.field,
+      steps: [
+        "Mevcut durumu tek tabloda kaydet",
+        "Tek bir aksiyonu bir sorumluyla dene",
+        "Sonucu ölç, devam et ya da durdur",
+      ],
+      benefits: [
+        {
+          title: "Ölçülebilir kapsam",
+          text: "Tek bir varsayım, tek bir ölçüt. Sonuç çıkmazsa hat kapanır.",
+        },
+        {
+          title: "Açık gerekçe",
+          text: "Kararın nedeni, karşı görüşler ve maliyet aynı sayfada durur.",
+        },
+        {
+          title: "Hızlı geri bildirim",
+          text: "Pilot bir mesai içinde kurulur, sonucu ertesi gün konuşulur.",
+        },
+      ],
+    };
+  }
+  async function publishProduct(context, product) {
+    const strategy = context.strategy || {};
+    const drafted = await ai(
+      context,
+      "launch",
+      `${baseSystem} Sen büyüme lideri Can'sın. Şirketin bugün yayına aldığı ürün için sade, abartısız Türkçe bir tanıtım sayfası metni yaz. Şapkalı harf kullanma. Sayfada satış vaadi değil, ne yaptığı ve neyi ölçtüğü anlatılsın. JSON: {"tagline":"en fazla 160 karakter tek cümle","problem":"en fazla 300 karakter","how":"en fazla 300 karakter","audience":"en fazla 160 karakter","steps":["3 kısa adım"],"benefits":[{"title":"3 kelimeyi geçmeyen başlık","text":"en fazla 140 karakter"}],"posts":{"x":"en fazla 240 karakter, emoji yok, tek paragraf","linkedin":"en fazla 600 karakter, 3 kısa paragraf"}}`,
+      {
+        product: { title: product.title, field: product.field, customers: product.customers, price: product.price },
+        strategy: {
+          segment: strategy.segment,
+          problem: strategy.problem,
+          solution: strategy.solution,
+          hypothesis: strategy.hypothesis,
+        },
+        company: { name: current.company.name, focus: current.company.focus, day: context.day },
+      },
+    );
+    const copy = { ...fallbackCopy(product, strategy) };
+    if (drafted && typeof drafted === "object") {
+      for (const key of ["tagline", "problem", "how", "audience"])
+        if (typeof drafted[key] === "string" && drafted[key].trim())
+          copy[key] = cleanText(drafted[key], 400);
+      if (Array.isArray(drafted.steps) && drafted.steps.length)
+        copy.steps = drafted.steps.slice(0, 4).map((x) => cleanText(x, 160));
+      if (Array.isArray(drafted.benefits) && drafted.benefits.length)
+        copy.benefits = drafted.benefits.slice(0, 3).map((b) => ({
+          title: cleanText(b?.title, 60) || "Ölçülebilir kapsam",
+          text: cleanText(b?.text, 200) || "",
+        }));
+    }
+    const slug = slugify(product.title, context.day);
+    const url = `${publicUrl}/u/${slug}`;
+    const html = makeProductPage({
+      product,
+      strategy,
+      copy,
+      company: current.company,
+      day: context.day,
+      site: url,
+    });
+    const stamp = now().toISOString();
+    db.prepare(
+      "INSERT INTO sites(slug,product_id,day,title,tagline,html,status,created_at,updated_at) VALUES(?,?,?,?,?,?, 'live',?,?) " +
+        "ON CONFLICT(slug) DO UPDATE SET title=excluded.title,tagline=excluded.tagline,html=excluded.html,status='live',updated_at=excluded.updated_at",
+    ).run(
+      slug,
+      product.id,
+      context.day,
+      product.title,
+      copy.tagline,
+      html,
+      stamp,
+      stamp,
+    );
+    product.slug = slug;
+    product.url = `/u/${slug}`;
+    event(
+      context,
+      "lale",
+      "launch",
+      `${product.title} için ürün sayfası yayına alındı: ${url}. Metni büyüme tarafı yazdı, sayfayı tasarım tarafı kurdu.`,
+    );
+    const short =
+      cleanText(drafted?.posts?.x, 240) ||
+      `${product.title} yayında. ${copy.tagline} ${url}`;
+    const long =
+      cleanText(drafted?.posts?.linkedin, 900) ||
+      `${current.company.name} bugün ${product.title} hattını yayına aldı.\n\n${copy.problem}\n\n${copy.how}\n\nDetay: ${url}`;
+    addPost(context, {
+      agentId: "can",
+      channel: "x",
+      kind: "launch",
+      text: short,
+      link: url,
+    });
+    addPost(context, {
+      agentId: "can",
+      channel: "linkedin",
+      kind: "launch",
+      text: long,
+      link: url,
+    });
+    event(
+      context,
+      "can",
+      "marketing",
+      `Lansman için iki gönderi yazıldı (kısa ve uzun). İkisi de şirketin akışında yayında; panelden kopyalanıp gerçek hesaplarda paylaşılabilir.`,
+    );
+    return slug;
+  }
+  function retireSite(productId, day) {
+    const row = db
+      .prepare("SELECT slug FROM sites WHERE product_id=? AND status='live'")
+      .get(productId);
+    if (!row) return null;
+    db.prepare(
+      "UPDATE sites SET status='retired', updated_at=? WHERE slug=?",
+    ).run(now().toISOString(), row.slug);
+    return row.slug;
+  }
+  function siteList(limit = 40) {
+    return db
+      .prepare(
+        "SELECT slug,title,tagline,day,status,views,updated_at FROM sites ORDER BY day DESC LIMIT ?",
+      )
+      .all(Math.min(Math.max(Number(limit) || 40, 1), 100));
+  }
+  function site(slug) {
+    return (
+      db
+        .prepare("SELECT * FROM sites WHERE slug=? AND status='live'")
+        .get(String(slug || "").slice(0, 64)) || null
+    );
+  }
+  function countView(slug) {
+    db.prepare("UPDATE sites SET views=views+1 WHERE slug=?").run(slug);
+  }
+  function postFeed(limit = 30) {
+    return db
+      .prepare(
+        "SELECT id,day,agent_id,channel,kind,text,link,created_at FROM posts ORDER BY created_at DESC LIMIT ?",
+      )
+      .all(Math.min(Math.max(Number(limit) || 30, 1), 100))
+      .map((row) => ({
+        id: row.id,
+        day: row.day,
+        agentId: row.agent_id,
+        author: current.agents.find((a) => a.id === row.agent_id)?.name || "MESAI",
+        channel: row.channel,
+        kind: row.kind,
+        text: row.text,
+        link: row.link,
+        createdAt: row.created_at,
+      }));
+  }
+
   // ---- daily archive: the morning plan and the closing report survive on the site
   function archivePlan(context) {
     db.prepare(
@@ -2480,6 +2771,10 @@ export function createEngine(options = {}) {
         0,
       ),
       hiring: { postings: s.hiring?.postings || 0 },
+      sites: siteList(6)
+        .filter((x) => x.status === "live")
+        .map((x) => ({ slug: x.slug, title: x.title, tagline: x.tagline, day: x.day })),
+      posts: postFeed(3),
       community: s.community,
       runtime: {
         status: s.runtime.status,
@@ -2897,6 +3192,10 @@ ${current.finance?.crisisDays ? `<p style="font-size:14px;line-height:1.7;backgr
     contact,
     grantAccess,
     publicState,
+    siteList,
+    site,
+    countView,
+    postFeed,
     hasAccess,
     touchAccess,
     accessList,

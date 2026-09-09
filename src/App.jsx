@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import Landing from "./Landing.jsx";
 import Markdown from "./Markdown.jsx";
 import Reports from "./Reports.jsx";
+import Marketing from "./Marketing.jsx";
 import Legal, { LEGAL_ROUTES } from "./Legal.jsx";
 import Gate, { ACCESS_KEY, readAccess } from "./Gate.jsx";
 import {
@@ -40,6 +41,7 @@ import {
   LockKeyhole,
   LogOut,
   Maximize2,
+  Megaphone,
   Menu,
   Pause,
   Play,
@@ -89,6 +91,7 @@ const NAV = [
   { id: "tasks", label: "İş panosu", icon: CheckCheck },
   { id: "artifacts", label: "Üretilenler", icon: FolderOpen },
   { id: "reports", label: "Günlük raporlar", icon: CalendarDays },
+  { id: "marketing", label: "Ürünler & pazarlama", icon: Megaphone },
   { id: "learning", label: "Öğrenme günlüğü", icon: BrainCircuit },
 ];
 // The site has three kinds of page: the product page, the live panel and the legal texts.
@@ -2406,6 +2409,19 @@ export default function App() {
                   <Reports
                     artifacts={data.artifacts}
                     openArtifact={setArtifactModal}
+                  />
+                </>
+              )}
+              {page === "marketing" && (
+                <>
+                  <SectionHeading
+                    eyebrow="ŞİRKETİN KENDİ İŞİ"
+                    title="Ürünü kendi yayına alıyor, tanıtımını kendi yazıyor."
+                    description="Kazanan bir iş ürüne dönüştüğünde ekip tanıtım sayfasını yazıp canlıya alıyor, lansman gönderilerini hazırlıyor ve her mesai sonunda kendi akışına not düşüyor."
+                  />
+                  <Marketing
+                    sites={data.sites || []}
+                    posts={data.posts || []}
                   />
                 </>
               )}

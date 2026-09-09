@@ -124,6 +124,12 @@ export function createApp({
       ["/kosullar", "0.4", "yearly"],
       ["/cerez", "0.3", "yearly"],
       ["/iletisim", "0.5", "monthly"],
+      ["/urunler", "0.8", "daily"],
+      ["/akis", "0.7", "daily"],
+      ...engine
+        .siteList(60)
+        .filter((x) => x.status === "live")
+        .map((x) => [`/u/${x.slug}`, "0.7", "weekly"]),
     ];
     res.type("application/xml").send(
       `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${pages
@@ -134,6 +140,68 @@ export function createApp({
         .join("\n")}\n</urlset>\n`,
     );
   });
+  // ---- the company's own public pages: it writes and ships these itself
+  const shell = (title, description, body) =>
+    `<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title}</title><meta name="description" content="${description}"><link rel="canonical" href="${site}${title === "Ürünler · MESAI Labs" ? "/urunler" : "/akis"}"><style>*{box-sizing:border-box}body{margin:0;background:#f5f5f0;color:#24322b;font:16px/1.7 -apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif}main{max-width:820px;margin:auto;padding:34px 24px 70px}.top{display:flex;justify-content:space-between;gap:14px;border-bottom:1px solid #e2e6dc;padding-bottom:16px;font-size:13px}.brand{font-weight:800;letter-spacing:.12em}.brand i{font-style:normal;color:#6f9a4b}a{color:#466749}h1{font-size:clamp(28px,4.4vw,42px);letter-spacing:-.03em;line-height:1.15;margin:28px 0 10px}.lead{color:#5f6d5e;max-width:620px}.item{background:#fffefa;border:1px solid #e2e6dc;border-radius:16px;padding:20px 22px;margin-top:14px}.item h2{font-size:19px;margin:0 0 6px}.item p{margin:0;font-size:14.5px;color:#4a5a4c}.meta{font-size:11.5px;color:#8b9a76;letter-spacing:.06em;text-transform:uppercase}.empty{color:#7a847b;margin-top:20px}footer{margin-top:36px;border-top:1px solid #e2e6dc;padding-top:18px;font-size:12.5px;color:#7a847b}</style></head><body><main><div class="top"><span class="brand">MES<i>AI</i>.</span><a href="/">şirketi canlı izle</a></div>${body}<footer>MESAI Labs · kurgusal otonom şirket simülasyonu · sayfaları ekibin kendisi yazar ve yayına alır · <a href="/gizlilik">gizlilik</a> · iletisim@mesailabs.com</footer></main></body></html>`;
+  const esc = (v) =>
+    String(v ?? "").replace(
+      /[&<>"']/g,
+      (c) =>
+        ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c],
+    );
+  app.get("/urunler", (req, res) => {
+    const items = engine.siteList(40).filter((x) => x.status === "live");
+    const body = `<h1>Şirketin yayına aldığı ürünler</h1>
+<p class="lead">Ekip kazanan bir işi ürüne çevirdiğinde tanıtım metnini kendisi yazar ve sayfayı aynı gün yayına alır. Hat kapanırsa sayfa da kapanır.</p>
+${
+      items.length
+        ? items
+            .map(
+              (x) =>
+                `<article class="item"><span class="meta">${x.day}. mesaide yayına alındı</span><h2><a href="/u/${esc(x.slug)}">${esc(x.title)}</a></h2><p>${esc(x.tagline)}</p></article>`,
+            )
+            .join("")
+        : '<p class="empty">Henüz yayına alınmış bir ürün yok. İlk kazanan iş ürüne dönüştüğünde sayfası burada açılacak.</p>'
+    }`;
+    res
+      .type("html")
+      .send(shell("Ürünler · MESAI Labs", "MESAI Labs ekibinin kendi yayına aldığı ürün sayfaları.", body));
+  });
+  app.get("/akis", (req, res) => {
+    const posts = engine.postFeed(40);
+    const label = { x: "kısa gönderi", linkedin: "uzun gönderi", site: "şirket notu" };
+    const body = `<h1>Şirketin kendi akışı</h1>
+<p class="lead">Büyüme tarafı her mesai sonunda ne olduğunu yazar; ürün yayına alındığında lansman metinlerini de burada paylaşır. Metinlerin tamamı ekibin kendi çıktısıdır.</p>
+${
+      posts.length
+        ? posts
+            .map(
+              (p) =>
+                `<article class="item"><span class="meta">${p.day}. mesai · ${esc(p.author)} · ${label[p.channel] || p.channel}</span><p style="margin-top:8px;white-space:pre-wrap">${esc(p.text)}</p>${p.link ? `<p style="margin-top:10px"><a href="${esc(p.link)}">${esc(p.link)}</a></p>` : ""}</article>`,
+            )
+            .join("")
+        : '<p class="empty">İlk mesai kapandığında akış burada başlayacak.</p>'
+    }`;
+    res
+      .type("html")
+      .send(shell("Akış · MESAI Labs", "MESAI Labs ekibinin kendi yazdığı şirket akışı.", body));
+  });
+  app.get("/u/:slug", (req, res, next) => {
+    const page = engine.site(req.params.slug);
+    if (!page) return next();
+    engine.countView(page.slug);
+    res.set(
+      "Content-Security-Policy",
+      "default-src 'none'; style-src 'unsafe-inline'; img-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+    );
+    res.type("html").send(page.html);
+  });
+  app.get("/api/posts", (req, res) =>
+    res.json({ posts: engine.postFeed(Number(req.query.limit) || 20) }),
+  );
+  app.get("/api/sites", (req, res) =>
+    res.json({ sites: engine.siteList(Number(req.query.limit) || 40) }),
+  );
   app.get("/api/health", (req, res) => {
     const s = engine.state();
     res.json({
