@@ -4884,7 +4884,7 @@ a.lp-file:hover {
 .owner-visitors {
   margin-top: 6px;
 }
-.visitor-table {
+.guest-table {
   margin-top: 10px;
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -4892,8 +4892,8 @@ a.lp-file:hover {
   max-height: 320px;
   overflow-y: auto;
 }
-.visitor-head,
-.visitor-row {
+.guest-head,
+.guest-row {
   display: grid;
   grid-template-columns: minmax(0, 2fr) 1fr 1fr 56px;
   gap: 8px;
@@ -4901,7 +4901,7 @@ a.lp-file:hover {
   font-size: 12.5px;
   align-items: center;
 }
-.visitor-head {
+.guest-head {
   background: #f2f4ec;
   color: var(--muted);
   font-size: 11.5px;
@@ -4909,15 +4909,100 @@ a.lp-file:hover {
   position: sticky;
   top: 0;
 }
-.visitor-row {
+.guest-row {
   border-top: 1px solid var(--line);
 }
-.visitor-row span:first-child {
+.guest-row span:first-child {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.visitor-row b {
+.guest-row b {
   font-weight: 600;
   color: #3f7a45;
+}
+
+/* ---- Ürün sayfası: her şey ortada ve tek kolonda hizalı */
+.lp-hero {
+  text-align: center;
+}
+.lp-hero h1,
+.lp-lead {
+  margin-left: auto;
+  margin-right: auto;
+}
+.lp-lead {
+  max-width: 660px;
+}
+.lp-actions {
+  justify-content: center;
+}
+.lp-section {
+  text-align: center;
+}
+.lp-section .lp-sub,
+.lp-section > p {
+  margin-left: auto;
+  margin-right: auto;
+}
+.lp-steps article,
+.lp-file,
+.lp-truth > div,
+.lp-brief-demo {
+  text-align: left;
+}
+.lp-team-foot {
+  justify-content: center;
+}
+.lp-owner {
+  text-align: left;
+}
+.lp-owner .lp-sub {
+  margin-left: 0;
+}
+.lp-signup {
+  text-align: left;
+}
+/* İş verme bloğu: ortada, tek kolon, gerçek bir kart */
+.lp-visitor-grid {
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 780px;
+  margin: 0 auto;
+  gap: 26px;
+}
+.lp-visitor-grid .visitor {
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 30px 30px 26px;
+  text-align: left;
+}
+.lp-visitor-grid .visitor-head {
+  display: block;
+  text-align: center;
+}
+.lp-visitor-grid .visitor-head h3 {
+  font-size: clamp(24px, 3vw, 31px);
+  margin: 12px auto 10px;
+  max-width: 520px;
+}
+.lp-visitor-grid .visitor-head p {
+  font-size: 14px;
+  max-width: 560px;
+  margin: 0 auto;
+}
+.lp-visitor-grid .visitor-form {
+  margin-top: 22px;
+}
+.lp-visitor-grid .visitor-form textarea {
+  min-height: 104px;
+  background: #fbfcf7;
+}
+.visitor-feed {
+  text-align: left;
+}
+@media (max-width: 720px) {
+  .lp-visitor-grid .visitor {
+    padding: 24px 20px 20px;
+  }
 }

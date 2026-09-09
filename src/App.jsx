@@ -1677,21 +1677,21 @@ function Visitors({ token }) {
         {total ? ` (${total})` : ""}
       </button>
       {open && (
-        <div className="visitor-table">
+        <div className="guest-table">
           {!rows ? (
             <p className="owner-note">Liste yükleniyor…</p>
           ) : rows.length === 0 ? (
             <p className="owner-note">Henüz kimse e-posta bırakmadı.</p>
           ) : (
             <>
-              <div className="visitor-head">
+              <div className="guest-head">
                 <span>E-posta</span>
                 <span>İlk giriş</span>
                 <span>Son giriş</span>
                 <span>Ziyaret</span>
               </div>
               {rows.map((row) => (
-                <div className="visitor-row" key={row.email}>
+                <div className="guest-row" key={row.email}>
                   <span>
                     {row.email}
                     {row.subscribed && <b title="Bültene abone"> · bülten</b>}
