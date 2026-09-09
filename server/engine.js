@@ -1780,7 +1780,11 @@ export function createEngine(options = {}) {
         ),
       },
     ]);
-    return { status: "pending", mail: delivery.reason || "sent" };
+    // Report what actually happened so a broken key is visible instead of silent.
+    return {
+      status: "pending",
+      mail: delivery.sent ? "sent" : delivery.reason || "failed",
+    };
   }
 
   function confirmSubscriber(token) {
