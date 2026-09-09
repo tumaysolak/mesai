@@ -113,7 +113,7 @@ test("a rules day completes actual artifacts, assigned work, votes and clearly s
   assert.equal(state.company.day, 1);
   assert.equal(state.runtime.mode, "rules");
   assert.equal(state.runtime.callsToday, 0);
-  assert.equal(state.artifacts.length, 4);
+  assert.equal(state.artifacts.length, 5);
   assert.equal(
     state.tasks.filter(
       (task) => task.status === "done" && task.progress === 100,
@@ -164,7 +164,7 @@ test("concurrent attempts and repeated durable keys cannot create duplicate days
   assert.equal(results.filter((result) => result.started).length, 1);
   assert.equal((await engine.run({ key: "same-day" })).reason, "duplicate");
   assert.equal(engine.state().company.day, 1);
-  assert.equal(engine.state().artifacts.length, 4);
+  assert.equal(engine.state().artifacts.length, 5);
 });
 
 test("08:00 schedule runs once per Istanbul date, including weekends and startup catch-up", async (t) => {
@@ -354,7 +354,7 @@ test("provider failures fall back visibly without leaking provider errors or key
   assert.equal(state.runtime.mode, "rules");
   assert.match(state.runtime.error, /kurallar motoru/);
   assert.doesNotMatch(JSON.stringify(state), /test-secret|Provider rejected/);
-  assert.equal(state.artifacts.length, 4);
+  assert.equal(state.artifacts.length, 5);
 });
 
 test("valid JSON without required council or document fields is not counted as successful AI work", async (t) => {
@@ -429,7 +429,7 @@ test(
     assert.equal(recovered.company.revenue, checkpoint.company.revenue);
     assert.equal(recovered.company.customers, checkpoint.company.customers);
     assert.equal(recovered.experiments.length, 1);
-    assert.equal(recovered.artifacts.length, 4);
+    assert.equal(recovered.artifacts.length, 5);
     assert.equal(recovered.history.length, 2);
     assert.ok(recovered.agents.every((agent) => agent.memories.length === 1));
     assert.equal((await engine.run({ key: "crash-day" })).reason, "duplicate");
@@ -583,4 +583,74 @@ test("the retrospective lesson replaces the provisional one everywhere it is sho
   assert.match(experiment.lesson, /\d/);
   assert.match(decision.result, /Ders:/);
   assert.ok(experiment.lesson.length > 40);
+});
+
+test("the day ends with a profit and loss report the observer can download", async (t) => {
+  const engine = engineFor(t, { fetchImpl: () => { throw new Error("no ai"); } });
+  await engine.run({ key: "report-1" });
+  const state = engine.state();
+  const report = state.artifacts.find((a) => a.title.includes("gün sonu raporu"));
+  assert.ok(report, "gün sonu raporu üretilmeli");
+  assert.equal(report.type, "markdown");
+  for (const line of ["Pilot geliri", "Bakım geliri", "Bordro", "Net", "Kasa"])
+    assert.match(report.content, new RegExp(line));
+  assert.ok(engine.artifact(report.id));
+  const entry = state.ledger[0];
+  assert.equal(entry.day, state.company.day);
+  assert.equal(
+    entry.net,
+    Math.round(
+      (entry.pilotRevenue + entry.retainer - entry.experimentCost - entry.payroll) * 100,
+    ) / 100,
+  );
+  assert.equal(entry.headcount, state.agents.length);
+  assert.ok(entry.focus);
+});
+
+test("the company can change what it does when a different area wins", async (t) => {
+  const engine = engineFor(t, { fetchImpl: () => { throw new Error("no ai"); } });
+  const first = engine.state().company.focus;
+  assert.ok(first);
+  for (let day = 1; day <= 4; day++) await engine.run({ key: `pivot-${day}` });
+  const state = engine.state();
+  assert.ok(state.company.focus);
+  assert.ok(state.ledger.length >= 4);
+  // the ledger keeps whichever focus each day was run under
+  assert.ok(state.ledger.every((entry) => entry.focus && entry.work));
+});
+
+test("visitor work is capped per fingerprint and never touches the company", async (t) => {
+  const engine = engineFor(t, { fetchImpl: () => { throw new Error("no ai"); } });
+  await engine.run({ key: "visitor-day" });
+  const before = engine.state();
+  const first = await engine.visitorTask({
+    brief: "Depoda sayım süresini kısaltmak için ne denemeliyim",
+    ip: "203.0.113.7",
+  });
+  assert.ok(first.work);
+  assert.equal(first.work.mode, "rules");
+  assert.ok(first.work.deliverable.length > 200);
+  assert.equal(first.work.notes.length, 3);
+  const second = await engine.visitorTask({
+    brief: "Aynı ziyaretçi ikinci kez deniyor burada",
+    ip: "203.0.113.7",
+  });
+  assert.equal(second.error, "quota");
+  const other = await engine.visitorTask({
+    brief: "Başka bir ziyaretçi başka bir iş yazıyor",
+    ip: "203.0.113.8",
+  });
+  assert.ok(other.work);
+  assert.equal(engine.visitorStatus("203.0.113.7").remaining, 0);
+  assert.equal(engine.visitorStatus("203.0.113.9").remaining, 1);
+  const after = engine.state();
+  assert.equal(after.company.day, before.company.day);
+  assert.equal(after.company.cash, before.company.cash);
+  assert.equal(after.artifacts.length, before.artifacts.length);
+  assert.equal(after.community.visitorWorksToday, 2);
+  // rules mode output is private: the public feed only carries model written text
+  assert.equal(engine.visitorFeed().length, 0);
+  assert.equal(engine.visitorWork(first.work.id).id, first.work.id);
+  const tooShort = await engine.visitorTask({ brief: "kısa", ip: "203.0.113.10" });
+  assert.equal(tooShort.error, "short");
 });

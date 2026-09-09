@@ -98,6 +98,88 @@ export function createApp({
     );
     res.send(artifact.content);
   });
+  const page = (title, message) =>
+    `<!doctype html><html lang="tr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${title} · MESAI</title><style>body{margin:0;background:#f5f5f0;color:#24322b;font:16px/1.7 system-ui,sans-serif;display:grid;place-items:center;min-height:100vh}main{max-width:460px;padding:34px;text-align:center}a{color:#3f6b3f}h1{font-size:23px;margin:0 0 12px}</style></head><body><main><p style="font-weight:800;letter-spacing:.14em;font-size:13px">MES<span style="color:#6f9a4b">AI</span>.</p><h1>${title}</h1><p>${message}</p><p><a href="/">Ürün sayfasına dön</a></p></main></body></html>`;
+
+  const visitorLimits = new Map();
+  app.get("/api/visitor/status", (req, res) =>
+    res.json(engine.visitorStatus(req.ip)),
+  );
+  app.get("/api/visitor/feed", (req, res) =>
+    res.json({ works: engine.visitorFeed(12) }),
+  );
+  app.get("/api/visitor/work/:id", (req, res) => {
+    const work = engine.visitorWork(req.params.id);
+    if (!work) return res.status(404).json({ error: "Bu iş bulunamadı." });
+    res.json({ work });
+  });
+  app.post("/api/visitor/task", async (req, res) => {
+    const brief = typeof req.body?.brief === "string" ? req.body.brief : "";
+    if (brief.trim().length < 12 || brief.length > 300)
+      return res.status(400).json({
+        error: "İş tanımı 12 ile 300 karakter arasında olmalı.",
+      });
+    const now = Date.now();
+    const last = visitorLimits.get(req.ip) || 0;
+    if (visitorLimits.size > 5000) visitorLimits.clear();
+    if (now - last < 20000)
+      return res
+        .status(429)
+        .json({ error: "Bir istek işleniyor. Biraz bekle." });
+    visitorLimits.set(req.ip, now);
+    try {
+      const result = await engine.visitorTask({ brief, ip: req.ip });
+      if (result.error === "quota")
+        return res.status(429).json({
+          error:
+            "Günlük hakkını kullandın. Ekip yarın senin için tekrar çalışabilir.",
+        });
+      if (result.error === "rejected")
+        return res.status(422).json({
+          error:
+            "Ekip bu işi kapsam dışı buldu. Şirketin yapabileceği somut bir iş tanımı yaz.",
+        });
+      if (result.error)
+        return res.status(400).json({ error: "İş tanımı yeterince açık değil." });
+      res.json({ work: result.work });
+    } catch {
+      res.status(500).json({ error: "İş şu an üretilemedi. Tekrar dene." });
+    }
+  });
+
+  app.post("/api/mail/subscribe", async (req, res) => {
+    const email = typeof req.body?.email === "string" ? req.body.email : "";
+    const result = await engine.subscribe(email);
+    if (result.error)
+      return res.status(400).json({ error: "Geçerli bir e-posta adresi gir." });
+    res.json(result);
+  });
+  app.get("/api/mail/confirm", (req, res) => {
+    const result = engine.confirmSubscriber(req.query.token);
+    res
+      .status(result.error ? 404 : 200)
+      .type("html")
+      .send(
+        result.error
+          ? page("Bağlantı geçersiz", "Bu onay bağlantısı artık geçerli değil.")
+          : page(
+              "Abonelik onaylandı",
+              "Her mesai sonunda şirkette ne olduğunu e-postayla göndereceğiz.",
+            ),
+      );
+  });
+  app.get("/api/mail/unsubscribe", (req, res) => {
+    const result = engine.unsubscribe(req.query.token);
+    res
+      .status(result.error ? 404 : 200)
+      .type("html")
+      .send(
+        result.error
+          ? page("Bağlantı geçersiz", "Bu bağlantı artık geçerli değil.")
+          : page("Abonelik bırakıldı", "Bundan sonra e-posta göndermeyeceğiz."),
+      );
+  });
+
   app.get("/api/admin/check", owner, (req, res) => res.json({ ok: true }));
   let lastManual = 0;
   app.post("/api/admin/run", owner, (req, res) => {

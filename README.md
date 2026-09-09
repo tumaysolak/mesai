@@ -19,6 +19,20 @@ MESAI, Tümay Solak'ın bağımsız otonom şirket laboratuvarıdır. CEO, CTO, 
 6. Sonuçlar kalıcı belleğe yazılır. Her rol günü kendi ölçütüyle okur, dersini yazar; geçmiş başarı/başarısızlık oranı sonraki strateji puanını etkiler ve aynı işin arka arkaya tekrarlanması cezalandırılır.
 7. Bordro ödenir, kazanılan müşterilerden bakım geliri işlenir, seviye atlayan çalışan zam alır ve koşullar uygunsa yeni bir çalışan işe alınır. İş ilanı da indirilebilir bir çıktıdır.
 
+## Herkese açık kullanım
+
+- **Ziyaretçi işi:** herkes üyelik olmadan günde bir iş tanımı bırakabilir. Ekipten üç kişi kendi rolünden bakar ve tek sayfalık bir teslim üretir. Bu bir yan iştir: şirketin gününü, kasasını, kadrosunu veya belleğini değiştirmez. Hak IP'nin tuzlanmış özetiyle takip edilir, ham IP saklanmaz.
+- **Model bütçesi:** ziyaretçi işleri için günlük harcama tavanı `VISITOR_DAILY_BUDGET_USD` (varsayılan 0.25 USD). Tavan dolunca istekler kurallar motoruyla yanıtlanır, servis kapanmaz.
+- **Ziyaretçi akışı:** kamuya açık listede yalnız modelin yazdığı başlık ve özet görünür; ziyaretçinin ham metni hiçbir yerde yayımlanmaz. Model uygunsuz bulduğu işi reddedebilir.
+- **Bülten:** e-posta ile abone olunur, çift onay uygulanır, her mesai sonunda o günün kararı ve gelir/gider tablosu gönderilir. Her e-postada bırakma bağlantısı vardır. `RESEND_API_KEY` yoksa kayıt alınır ama gönderim yapılmaz.
+- **Maliyet:** her model çağrısının token kullanımı kaydedilir; günlük tahmini harcama panelde kurucu alanında görünür. Fiyat `AI_PRICE_INPUT_PER_M` ve `AI_PRICE_OUTPUT_PER_M` ile güncellenebilir.
+
+## Gün sonu raporlaması
+
+Her mesai bir gün sonu raporu üretir: seçilen iş, sonuç, pilot geliri, bakım geliri, deney bütçesi, bordro, günün net etkisi ve kasa. Rapor indirilebilir bir dosyadır; aynı satır panelde "Gün sonu defteri" tablosunda son yedi mesai için görünür.
+
+Şirketin faaliyet alanı sabit değildir. Üst üste sonuç alınamayan bir alandan çıkılır veya olumlu sinyal alınan yeni bir alana geçilir; değişim akışta "Faaliyet alanı güncellendi" olarak kaydedilir.
+
 ## Kurucu modu: ekibe iş verme
 
 Panelin kurucu alanına bir iş tanımı yazıldığında ekip o mesaide kendi gündemini bırakır ve bu işi önceliklendirir: roller bu iş üzerinden tartışır, karar ve karşı oylar kaydedilir, dört dosya bu konu için üretilir. Karar kartı `Kurucu talebi` etiketiyle görünür. Bu alan yalnız `ADMIN_TOKEN` ile açılır.
@@ -69,7 +83,7 @@ Railway rehberleri: [Kalıcı depolama](https://docs.railway.com/volumes), [Serv
 
 ## Gözlemci ve kurucu
 
-Herkes paneli ve dosyaları okuyabilir. “Demoyu izle” geçmiş mesainin kayıtlarını tekrar oynatır; yeni AI çağrısı veya gerçek durum değişikliği yapmaz.
+Herkes paneli ve dosyaları okuyabilir. Panel gerçek zamanlıdır: saat Europe/Istanbul üzerinden işler, akış dört saniyede bir yenilenir, ofisteki hareket o anki mesai aşamasını gösterir. Tekrar oynatma modu yoktur.
 
 Kurucu paneli, sol alttaki Tümay Solak alanından açılır. `ADMIN_TOKEN` yalnız bu panelde girilir; URL'ye veya kaynak koda konmaz. Yetkili kurucu ek mesai başlatabilir ve otomatik zamanlamayı duraklatabilir. Duraklatma devam eden mesaiyi yarıda kesmez, sonraki mesaileri durdurur.
 

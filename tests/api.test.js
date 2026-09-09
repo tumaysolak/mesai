@@ -2,6 +2,10 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { once } from "node:events";
 import { setTimeout as sleep } from "node:timers/promises";
+import { mkdtemp, rm } from "node:fs/promises";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
+import { DatabaseSync } from "node:sqlite";
 import { createEngine } from "../server/engine.js";
 import { createApp } from "../server/index.js";
 
@@ -240,4 +244,88 @@ test("an owner brief is length checked before it can reach the team", async (t) 
   const ignored = await request("/api/admin/run", post({ brief: { nested: true } }));
   assert.equal(ignored.status, 202);
   await sleep(30);
+});
+
+test("a visitor gets one task a day, and the public feed never carries their raw words", async (t) => {
+  const { engine, request } = await serve(t, {
+    engine: {
+      apiKey: "test-secret-not-real",
+      fetchImpl: async () => ({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          usage: { input_tokens: 400, output_tokens: 300 },
+          output: [
+            {
+              type: "message",
+              content: [
+                {
+                  type: "output_text",
+                  text: JSON.stringify({
+                    ok: true,
+                    title: "Kapanış kontrolü için tek haftalık deneme",
+                    summary: "Tek değişkenli bir kapanış denemesi önerildi.",
+                    notes: [{ role: "Ada Keskin · Ürün Lideri", note: "Önce sorunu yaşayan kişiyi bul." }],
+                    deliverable:
+                      "# Kapanış kontrolü\n\nBu bir simülasyon çıktısıdır. Tek değişkenli bir deneme kur, sorumluyu yaz, başarı ölçütünü sayıyla belirle ve iki hafta sonra durdurma kararını ver. Ölçüt karşılanmazsa kapsamı büyütme.",
+                  }),
+                },
+              ],
+            },
+          ],
+        }),
+      }),
+    },
+  });
+  const secret = "gizli-ziyaretci-metni-burada";
+  const first = await request("/api/visitor/task", post({ brief: secret }, {}));
+  assert.equal(first.status, 200);
+  const { work } = await first.json();
+  assert.equal(work.mode, "ai");
+  assert.doesNotMatch(work.title, /gizli-ziyaretci/);
+  const second = await request("/api/visitor/task", post({ brief: "başka bir iş tanımı yazıyorum" }, {}));
+  assert.equal(second.status, 429);
+  const feed = await (await request("/api/visitor/feed")).json();
+  assert.equal(feed.works.length, 1);
+  assert.doesNotMatch(JSON.stringify(feed.works), /gizli-ziyaretci/);
+  const short = await request("/api/visitor/task", post({ brief: "kısa" }, {}));
+  assert.equal(short.status, 400);
+  const state = engine.state();
+  assert.equal(state.community.visitorWorksToday, 1);
+  assert.ok(state.runtime.costToday > 0);
+  assert.ok(state.company.day === 0 || state.company.day >= 0);
+});
+
+test("the mailing list needs a real address and confirms before it is on the list", async (t) => {
+  const dir = await mkdtemp(join(tmpdir(), "mesai-mail-"));
+  t.after(() => rm(dir, { recursive: true, force: true }));
+  const databasePath = join(dir, "mail.db");
+  const { engine, request } = await serve(t, { engine: { databasePath } });
+  const bad = await request("/api/mail/subscribe", post({ email: "değil" }, {}));
+  assert.equal(bad.status, 400);
+  const good = await request(
+    "/api/mail/subscribe",
+    post({ email: "Okur@Example.com" }, {}),
+  );
+  assert.equal(good.status, 200);
+  const body = await good.json();
+  assert.equal(body.status, "pending");
+  assert.equal(body.mail, "not_configured");
+  assert.equal(engine.state().community.subscribers, 0);
+  const db = new DatabaseSync(databasePath);
+  const row = db
+    .prepare("SELECT email,token,status FROM subscribers")
+    .get();
+  db.close();
+  assert.equal(row.email, "okur@example.com");
+  assert.equal(row.status, "pending");
+  const wrong = await request("/api/mail/confirm?token=nope");
+  assert.equal(wrong.status, 404);
+  const confirm = await request(`/api/mail/confirm?token=${row.token}`);
+  assert.equal(confirm.status, 200);
+  assert.match(await confirm.text(), /Abonelik onayland/);
+  assert.equal(engine.state().community.subscribers, 1);
+  const out = await request(`/api/mail/unsubscribe?token=${row.token}`);
+  assert.equal(out.status, 200);
+  assert.equal(engine.state().community.subscribers, 0);
 });

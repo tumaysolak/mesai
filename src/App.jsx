@@ -1,5 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import Landing from "./Landing.jsx";
+import Markdown from "./Markdown.jsx";
+import { Ledger, MailSignup, VisitorTask } from "./Community.jsx";
 import Portrait from "./Portrait.jsx";
 import {
   Activity,
@@ -369,23 +371,17 @@ function Office({ agents, activeId, openAgent, running = false, phase = "", day 
   );
 }
 
-function EventFeed({ events, agents, replay, compact = false }) {
+function EventFeed({ events, agents, compact = false }) {
   const shown = compact ? events.slice(0, 5) : events;
   return (
     <div
       className={`event-feed ${compact ? "event-feed-compact" : ""}`}
-      aria-label={
-        replay ? "Kayıtlı olayların tekrarı" : "Şirket etkinlik akışı"
-      }
+      aria-label="Şirket etkinlik akışı"
     >
       {!shown.length ? (
         <Empty
-          title={replay ? "Kayıt başlıyor" : "Ofis şu an sessiz"}
-          text={
-            replay
-              ? "Günün adımları sırayla gösterilecek."
-              : "Yeni mesai başladığında gelişmeler burada görünecek."
-          }
+          title="Ofis şu an sessiz"
+          text="Yeni mesai başladığında gelişmeler burada görünecek."
         />
       ) : (
         shown.map((event, i) => {
@@ -569,10 +565,8 @@ function Overview({
   openDecision,
   navigate,
   events,
-  replay,
-  startReplay,
-  stopReplay,
   nextText,
+  clock,
   setOfficeOpen,
 }) {
   const { company, agents, runtime, tasks, artifacts, decisions, history } =
@@ -583,11 +577,7 @@ function Overview({
     decisions.find(
       (d) => d.status === "approved" || d.status === "completed",
     ) || decisions[0];
-  const activeId = replay
-    ? events[0]?.agentId
-    : runtime.status === "running"
-      ? events[0]?.agentId
-      : null;
+  const activeId = runtime.status === "running" ? events[0]?.agentId : null;
   return (
     <>
       <SectionHeading
@@ -599,19 +589,13 @@ function Overview({
         }
         description={`${agents.length} farklı karakter. Ortak bir hedef. Kendi kendine ilerleyen, büyüyen bir şirket.`}
         action={
-          <button
-            className={`button button-dark ${replay ? "replay-button" : ""}`}
-            onClick={replay ? stopReplay : startReplay}
-            disabled={!data.events.length}
-          >
-            {replay ? (
-              <Pause size={15} />
-            ) : (
-              <Play size={15} fill="currentColor" />
-            )}
-            {replay ? "Tekrarı durdur" : "Demoyu izle"}
-            <span>{replay ? "KAYIT" : `${company.day}. GÜN`}</span>
-          </button>
+          <div className="live-pill">
+            <span className="live-dot" />
+            <b>CANLI</b>
+            <span>
+              İstanbul {clock} · {company.day}. mesai
+            </span>
+          </div>
         }
       />
       <div className="metric-grid">
@@ -657,6 +641,22 @@ function Overview({
             {done} / {tasks.length} görev tamamlandı
           </div>
         </div>
+        <div className="metric">
+          <span className="metric-label">
+            Kadro ve bordro{" "}
+            <span className="metric-symbol">
+              <Users size={17} />
+            </span>
+          </span>
+          <div className="metric-value">
+            {number(company.headcount || agents.length)}
+            <small>kişi</small>
+          </div>
+          <div className="metric-foot">
+            <Wallet size={13} />
+            {money(company.payroll || 0)} bordro · {company.focus}
+          </div>
+        </div>
         <div className="metric metric-learning">
           <span className="metric-label">
             Kolektif hafıza <BrainCircuit size={18} />
@@ -673,6 +673,10 @@ function Overview({
           </button>
         </div>
       </div>
+      <Ledger entries={data.ledger || []} money={money} />
+      <section className="panel visitor-panel">
+        <VisitorTask compact />
+      </section>
       <div className="overview-grid">
         <section className="panel office-panel">
           <div className="panel-heading">
@@ -682,21 +686,15 @@ function Overview({
                 <span className="count-label">{agents.length} kişi</span>
               </h2>
               <p>
-                {replay
-                  ? "Kayıtlı mesai yeniden oynatılıyor."
-                  : runtime.status === "running"
-                    ? "Bir sonraki fikir burada şekilleniyor."
-                    : "Çalışma alanını ve ekibin hikâyelerini keşfet."}
+                {runtime.status === "running"
+                  ? "Bir sonraki fikir burada şekilleniyor."
+                  : "Çalışma alanını ve ekibin hikâyelerini keşfet."}
               </p>
             </div>
             <div className="panel-tools">
-              <Tag tone={runtime.status === "running" || replay ? "green" : ""}>
+              <Tag tone={runtime.status === "running" ? "green" : ""}>
                 <span className="tiny-dot" />
-                {replay
-                  ? "Tekrar"
-                  : runtime.status === "running"
-                    ? "Mesai açık"
-                    : "Ofis görünümü"}
+                {runtime.status === "running" ? "Mesai açık" : "Ofis görünümü"}
               </Tag>
               <button
                 className="icon-button"
@@ -711,7 +709,7 @@ function Overview({
             agents={agents}
             activeId={activeId}
             openAgent={openAgent}
-            running={runtime.status === "running" || replay}
+            running={runtime.status === "running"}
             phase={runtime.phase}
             day={company.day}
           />
@@ -735,7 +733,7 @@ function Overview({
             <div>
               <h2>Ofisten haberler</h2>
               <p>
-                {replay ? "Günün kayıtlarından" : "Karardan sonuca, adım adım"}
+                Karardan sonuca, adım adım
               </p>
             </div>
             <span
@@ -744,7 +742,7 @@ function Overview({
               <Radio size={16} />
             </span>
           </div>
-          <EventFeed events={events} agents={agents} replay={replay} compact />
+          <EventFeed events={events} agents={agents} compact />
           <button className="panel-link" onClick={() => navigate("activity")}>
             Tüm hareketleri gör <ArrowRight size={14} />
           </button>
@@ -1552,26 +1550,6 @@ function DecisionModal({ decision, agents, onClose }) {
   );
 }
 
-function Markdown({ content }) {
-  return (
-    <div className="markdown-preview">
-      {content.split("\n").map((line, i) => {
-        if (line.startsWith("### ")) return <h4 key={i}>{line.slice(4)}</h4>;
-        if (line.startsWith("## ")) return <h3 key={i}>{line.slice(3)}</h3>;
-        if (line.startsWith("# ")) return <h2 key={i}>{line.slice(2)}</h2>;
-        if (/^[-*] /.test(line))
-          return (
-            <p className="md-list" key={i}>
-              <span>•</span>
-              {line.slice(2)}
-            </p>
-          );
-        if (!line.trim()) return <div className="md-space" key={i} />;
-        return <p key={i}>{line.replace(/\*\*(.*?)\*\*/g, "$1")}</p>;
-      })}
-    </div>
-  );
-}
 function ArtifactModal({ artifact, onClose }) {
   return (
     <Modal
@@ -1718,6 +1696,13 @@ function OwnerModal({
             <span>Şu an</span>
             <Tag>{labelStatus(runtime.status)}</Tag>
           </div>
+          <div className="owner-status">
+            <span>Bugünkü model harcaması</span>
+            <Tag>
+              ${(runtime.costToday || 0).toFixed(4)} · {runtime.callsToday}/
+              {runtime.dailyCallLimit} çağrı
+            </Tag>
+          </div>
           <div className="owner-brief">
             <label htmlFor="owner-brief">
               <Sparkles size={14} /> Ekibe iş ver
@@ -1860,9 +1845,7 @@ export default function App() {
     [officeOpen, setOfficeOpen] = useState(false),
     [ownerOpen, setOwnerOpen] = useState(false);
   const [now, setNow] = useState(Date.now()),
-    [replay, setReplay] = useState(false),
-    [replayEvents, setReplayEvents] = useState([]),
-    [replayCursor, setReplayCursor] = useState(0);
+    [clock, setClock] = useState("");
   const [route, setRoute] = useState(() =>
     window.location.pathname.startsWith("/panel") ? "panel" : "landing",
   );
@@ -1912,6 +1895,17 @@ export default function App() {
     refresh();
     const poll = setInterval(refresh, 4000),
       clock = setInterval(() => setNow(Date.now()), 1000);
+    const tickClock = () =>
+      setClock(
+        new Intl.DateTimeFormat("tr-TR", {
+          timeZone: "Europe/Istanbul",
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        }).format(new Date()),
+      );
+    tickClock();
+    const clockTimer = setInterval(tickClock, 1000);
     const onHash = () => {
       const id = window.location.hash.slice(1);
       setPage(
@@ -1930,6 +1924,7 @@ export default function App() {
       mounted.current = false;
       clearInterval(poll);
       clearInterval(clock);
+      clearInterval(clockTimer);
       controller.current?.abort();
       window.removeEventListener("hashchange", onHash);
       window.removeEventListener("popstate", onRoute);
@@ -1947,11 +1942,7 @@ export default function App() {
       alive = false;
     };
   }, [token]);
-  useEffect(() => {
-    if (!replay || replayCursor >= replayEvents.length) return;
-    const timer = setTimeout(() => setReplayCursor((n) => n + 1), 1550);
-    return () => clearTimeout(timer);
-  }, [replay, replayCursor, replayEvents.length]);
+
   function goTo(path) {
     window.history.pushState({}, "", path);
     setRoute(path.startsWith("/panel") ? "panel" : "landing");
@@ -1963,20 +1954,10 @@ export default function App() {
     setMobileOpen(false);
     window.scrollTo({ top: 0, behavior: "instant" });
   }
-  function startReplay() {
-    const list = [...(data?.events || [])].sort(
-      (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
-    );
-    setReplayEvents(list.slice(-24));
-    setReplayCursor(1);
-    setReplay(true);
-  }
   const allEvents = [...(data?.events || [])].sort(
     (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
   );
-  const shownEvents = replay
-    ? replayEvents.slice(0, replayCursor).reverse()
-    : allEvents;
+  const shownEvents = allEvents;
   const nextMs = data?.runtime.nextRunAt
     ? Math.max(0, new Date(data.runtime.nextRunAt).getTime() - now)
     : 0;
@@ -2193,26 +2174,6 @@ export default function App() {
             />
           ) : (
             <div className="page-content" key={page}>
-              {replay && (
-                <div className="replay-strip" role="status">
-                  <span>
-                    <Play size={13} fill="currentColor" />
-                    <strong>Demo tekrar oynatılıyor</strong>{" "}
-                    <span>
-                      {replayCursor}/{replayEvents.length} kayıt ·{" "}
-                      {replayCursor >= replayEvents.length
-                        ? "Tekrar tamamlandı"
-                        : "Geçmiş etkinlikler"}
-                    </span>
-                  </span>
-                  <button
-                    className="text-button"
-                    onClick={() => setReplay(false)}
-                  >
-                    Güncel duruma dön <X size={14} />
-                  </button>
-                </div>
-              )}
               {page === "overview" && (
                 <Overview
                   data={data}
@@ -2221,9 +2182,7 @@ export default function App() {
                   openDecision={setDecisionModal}
                   navigate={navigate}
                   events={shownEvents}
-                  replay={replay}
-                  startReplay={startReplay}
-                  stopReplay={() => setReplay(false)}
+                  clock={clock}
                   nextText={nextText}
                   setOfficeOpen={setOfficeOpen}
                 />
@@ -2256,11 +2215,7 @@ export default function App() {
                     description="Öneriler, karşı görüşler, tamamlanan işler ve öğrenilen dersler. Her adım kayıt altında."
                   />
                   <section className="panel full-activity">
-                    <EventFeed
-                      events={shownEvents}
-                      agents={data.agents}
-                      replay={replay}
-                    />
+                    <EventFeed events={shownEvents} agents={data.agents} />
                   </section>
                 </>
               )}
@@ -2308,15 +2263,13 @@ export default function App() {
           <Office
             agents={data.agents}
             activeId={
-              replay || data.runtime.status === "running"
-                ? shownEvents[0]?.agentId
-                : null
+              data.runtime.status === "running" ? shownEvents[0]?.agentId : null
             }
             openAgent={(a) => {
               setOfficeOpen(false);
               setAgentModal(a);
             }}
-            running={replay || data.runtime.status === "running"}
+            running={data.runtime.status === "running"}
             phase={data.runtime.phase}
             day={data.company.day}
           />

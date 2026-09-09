@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Portrait from "./Portrait.jsx";
+import { MailSignup, VisitorFeed, VisitorTask } from "./Community.jsx";
 import {
   ArrowUpRight,
   BrainCircuit,
@@ -86,6 +87,7 @@ export default function Landing({ data, goToPanel }) {
           <a href="#nasil">Nasıl çalışır</a>
           <a href="#ciktilar">Çıktılar</a>
           <a href="#ekip">Ekip</a>
+          <a href="#isver">İş ver</a>
           <a href="#dogruluk">Gerçek mi?</a>
         </nav>
         <button className="lp-cta" onClick={goToPanel}>
@@ -112,7 +114,10 @@ export default function Landing({ data, goToPanel }) {
           işe alım yapar, maaşlar artar, kadro genişler.
         </p>
         <div className="lp-actions">
-          <button className="lp-cta lp-cta-big" onClick={goToPanel}>
+          <a className="lp-cta lp-cta-big" href="#isver">
+            <Sparkles size={16} /> Ekibe iş ver
+          </a>
+          <button className="lp-ghost" onClick={goToPanel}>
             <Play size={16} fill="currentColor" /> Şirketi canlı izle
           </button>
           <a
@@ -291,6 +296,20 @@ export default function Landing({ data, goToPanel }) {
             </li>
           </ul>
         </div>
+      </section>
+
+      <section className="lp-section" id="isver">
+        <div className="lp-visitor-grid">
+          <VisitorTask />
+          <VisitorFeed />
+        </div>
+      </section>
+
+      <section className="lp-section lp-signup" id="bulten">
+        <MailSignup
+          subscribers={data?.community?.subscribers || 0}
+          enabled={data?.community?.mailEnabled !== false}
+        />
       </section>
 
       <section className="lp-section" id="dogruluk">

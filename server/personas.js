@@ -158,6 +158,7 @@ export const STRATEGIES = [
     id: "office",
     title: "Ofislerde mesai dışı enerji kaybı",
     category: "office",
+    field: "Ofis enerji verimliliği",
     segment: "20–150 çalışanlı ofisler",
     problem:
       "Boş saatlerde çalışan iklimlendirme ve aydınlatmanın fark edilmemesi",
@@ -180,6 +181,7 @@ export const STRATEGIES = [
     id: "air",
     title: "KOBİ için basınçlı hava kaçak taraması",
     category: "air",
+    field: "Üretimde basınçlı hava",
     segment: "Kompresör kullanan küçük üretim tesisleri",
     problem: "Ölçülmeyen kaçakların görünmez işletme gideri oluşturması",
     solution:
@@ -201,6 +203,7 @@ export const STRATEGIES = [
     id: "cold",
     title: "Soğuk zincirde kapı açılma günlüğü",
     category: "cold",
+    field: "Soğuk zincir operasyonu",
     segment: "Küçük gıda depoları ve marketler",
     problem:
       "Sık kapı açılmasının ve sıcaklık sapmalarının birlikte izlenmemesi",
@@ -222,6 +225,7 @@ export const STRATEGIES = [
     id: "solar",
     title: "Çatı GES için performans kaybı günlüğü",
     category: "solar",
+    field: "Çatı GES performansı",
     segment: "Çatı güneş santrali bulunan küçük işletmeler",
     problem: "Beklenen ve ölçülen üretim farkının düzenli incelenmemesi",
     solution:
@@ -243,6 +247,7 @@ export const STRATEGIES = [
     id: "school",
     title: "Okul binalarında tüketim farkındalığı",
     category: "school",
+    field: "Eğitim binalarında enerji",
     segment: "Özel okul ve eğitim merkezi yöneticileri",
     problem:
       "Sınıflar ve tatil günleri için ortak bir enerji takip alışkanlığının olmaması",
@@ -265,6 +270,7 @@ export const STRATEGIES = [
     id: "heat",
     title: "Küçük tesisler için atık ısı fırsat haritası",
     category: "heat",
+    field: "Atık ısı değerlendirme",
     segment: "Fırın, kurutma veya sıcak proses kullanan KOBİler",
     problem:
       "Isı kaynakları ile olası kullanım alanlarının birlikte haritalanmaması",
