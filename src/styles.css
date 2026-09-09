@@ -5006,3 +5006,7 @@ a.lp-file:hover {
     padding: 24px 20px 20px;
   }
 }
+/* Dört adımlık günlük döngü tek satırda dursun, tek başına satır kalmasın */
+.lp-steps {
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+}
