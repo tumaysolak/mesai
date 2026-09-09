@@ -4762,3 +4762,7 @@ a.lp-file:hover {
 .footer-legal button:hover {
   opacity: 1;
 }
+.legal-page a {
+  color: var(--green);
+  text-underline-offset: 3px;
+}

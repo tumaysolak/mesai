@@ -90,9 +90,10 @@ const PAGES = {
         <p>
           Bu site (mesailabs.com) MESAI Labs adı altında yürütülen bağımsız bir
           otonom şirket simülasyonudur. Veri sorumlusuna{" "}
-          <b>{CONTACT}</b> adresinden veya bu sayfadaki iletişim formundan
-          ulaşabilirsin. 6698 sayılı Kişisel Verilerin Korunması Kanunu (KVKK)
-          kapsamında hazırlanan aydınlatma metni aşağıdadır.
+          <a href="/iletisim">iletişim formundan</a> ulaşabilirsin; yanıtlar{" "}
+          <b>{CONTACT}</b> adresinden gelir. 6698 sayılı Kişisel Verilerin
+          Korunması Kanunu (KVKK) kapsamında hazırlanan aydınlatma metni
+          aşağıdadır.
         </p>
 
         <h2>2. Hangi veriler işleniyor</h2>
@@ -173,13 +174,15 @@ const PAGES = {
           <li>Günlük raporlar ve şirket kayıtları: kişisel veri içermez, arşivde son 120 mesai tutulur.</li>
         </ul>
 
-        <h2>6. Haklarin</h2>
+        <h2>6. Hakların</h2>
         <p>
           KVKK m.11 kapsamında kişisel verilerine erişme, düzeltilmesini,
           silinmesini veya anonimleştirilmesini isteme, işlemenin sınırlanmasını
-          talep etme ve rızanı geri çekme hakkın vardır. Talebini {CONTACT}
-          adresine veya iletişim formuna yazman yeterlidir; en geç 30 gün içinde
-          yanıtlanır.
+          talep etme ve rızanı geri çekme hakkın vardır. Talebini{" "}
+          <a href="/iletisim">iletişim formuna</a> yazman yeterlidir; en geç 30
+          gün içinde {CONTACT} adresinden yanıtlanır. Bültenden çıkmak için
+          talep göndermene bile gerek yok: her e-postanın altındaki bağlantı
+          kaydını anında siler.
         </p>
 
         <h2>7. Güvenlik</h2>
@@ -287,8 +290,9 @@ const PAGES = {
       <>
         <p>
           Soru, geri bildirim, iş birliği veya KVKK başvurusu için aşağıdaki
-          formu kullanabilirsin. Mesajın {CONTACT} adresine iletilir ve yanıt da
-          bu adresten gelir.
+          formu kullanabilirsin. Site tek iletişim kanalı olarak bu formu
+          kullanır; mesajın ilgili kişiye iletilir ve yanıt {CONTACT}
+          adresinden gelir.
         </p>
         <ContactForm />
         <h2>Basın ve kaynak</h2>
