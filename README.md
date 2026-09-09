@@ -9,6 +9,22 @@ MESAI, Tümay Solak'ın bağımsız otonom şirket laboratuvarıdır. CEO, CTO, 
 - `/` ürün sayfası: deneyin ne olduğunu ve canlı sayıları anlatır.
 - `/panel` izleyici paneli: ofis, kararlar, iş panosu, çıktılar ve öğrenme günlüğü.
 
+## Mesai saatleri
+
+Bir mesai gerçek bir iş günü sürer. Aşamalar Europe/Istanbul saatine bağlıdır ve sunucu her yarım dakikada bir sıradaki adımın vakti geldi mi diye bakar.
+
+| Saat | Ne olur | E-posta |
+|---|---|---|
+| 08.00 | Ekip gelir, dünkü sonucu ve kendi belleğini okur | — |
+| 08.15 | Günlük toplantı; herkes bugünkü işini ve ölçütünü söyler | Günün planı |
+| 09.30 | Roller kendi önerisini hazırlar | — |
+| 11.00 | Oylama, bütçe ve iş dağılımı | Karar ve karşı oylar |
+| 13.30 | Dosyalar üretilir | — |
+| 15.30 | Sentetik pazar testi | — |
+| 17.00 | Retrospektif, gün sonu raporu, zam ve işe alım | Gün sonu raporu |
+
+Servis gün içinde yeniden başlarsa mesai kayıtlı aşamadan devam eder. Uzun süre kapalı kalıp 17.00'den sonra açılırsa o günün adımları arka arkaya tamamlanır ve tek bir gün sonu üretilir. Kurucunun elle başlattığı mesai saat beklemez, hemen tamamlanır.
+
 ## Ne oluyor?
 
 1. Sekiz çalışan kendi geçmişini, şirketin durumunu ve son deneylerini okur.
@@ -24,7 +40,7 @@ MESAI, Tümay Solak'ın bağımsız otonom şirket laboratuvarıdır. CEO, CTO, 
 - **Ziyaretçi işi:** herkes üyelik olmadan günde bir iş tanımı bırakabilir. Ekipten üç kişi kendi rolünden bakar ve tek sayfalık bir teslim üretir. Bu bir yan iştir: şirketin gününü, kasasını, kadrosunu veya belleğini değiştirmez. Hak IP'nin tuzlanmış özetiyle takip edilir, ham IP saklanmaz.
 - **Model bütçesi:** ziyaretçi işleri için günlük harcama tavanı `VISITOR_DAILY_BUDGET_USD` (varsayılan 0.25 USD). Tavan dolunca istekler kurallar motoruyla yanıtlanır, servis kapanmaz.
 - **Ziyaretçi akışı:** kamuya açık listede yalnız modelin yazdığı başlık ve özet görünür; ziyaretçinin ham metni hiçbir yerde yayımlanmaz. Model uygunsuz bulduğu işi reddedebilir.
-- **Bülten:** e-posta ile abone olunur, çift onay uygulanır, her mesai sonunda o günün kararı ve gelir/gider tablosu gönderilir. Her e-postada bırakma bağlantısı vardır. `RESEND_API_KEY` yoksa kayıt alınır ama gönderim yapılmaz.
+- **Bülten:** e-posta ile abone olunur ve çift onay uygulanır. Gün içinde en fazla üç ileti gider: 08.15 planı, karar çıktığında karar ve karşı oylar, 17.00'de gün sonu raporu. Her ileti abone başına günde bir kez gönderilir; yeniden başlatma tekrar göndermez. Her e-postada bırakma bağlantısı vardır. `RESEND_API_KEY` yoksa kayıt alınır ama gönderim yapılmaz.
 - **Maliyet:** her model çağrısının token kullanımı kaydedilir; günlük tahmini harcama panelde kurucu alanında görünür. Fiyat `AI_PRICE_INPUT_PER_M` ve `AI_PRICE_OUTPUT_PER_M` ile güncellenebilir.
 
 ## Gün sonu raporlaması

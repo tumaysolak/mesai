@@ -38,6 +38,20 @@ export function localDate(now = new Date()) {
     day: "2-digit",
   }).format(new Date(now));
 }
+// A shift is a real working day: each phase has its own hour, 08.00 to 17.00.
+export const SHIFT_PLAN = [
+  { at: "08:00", label: "08.00 · Ekip güne hazırlanıyor" },
+  { at: "08:15", label: "08.15 · Günlük toplantı ve iş planı" },
+  { at: "09:30", label: "Fikirler · Her rol kendi önerisini hazırlıyor" },
+  { at: "11:00", label: "Yönetim kurulu · Oylama ve bütçe" },
+  { at: "13:30", label: "Üretim · Pilot dosyası, model ve prototip" },
+  { at: "15:30", label: "Pazar testi · Sentetik talep ve sonuç" },
+  { at: "17:00", label: "17.00 · Retrospektif ve gün sonu raporu" },
+];
+export function phaseTime(date, phase) {
+  const step = SHIFT_PLAN[Math.min(phase, SHIFT_PLAN.length - 1)];
+  return new Date(`${date}T${step.at}:00+03:00`);
+}
 export function nextScheduledRun(now = new Date()) {
   const date = new Date(now);
   const today = new Date(`${localDate(date)}T08:00:00+03:00`);
@@ -563,6 +577,7 @@ export function createEngine(options = {}) {
     CREATE TABLE IF NOT EXISTS tokens (date TEXT PRIMARY KEY, input INTEGER NOT NULL DEFAULT 0, output INTEGER NOT NULL DEFAULT 0);
     CREATE TABLE IF NOT EXISTS visitor_work (id TEXT PRIMARY KEY, date TEXT NOT NULL, created_at TEXT NOT NULL, data TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS visitor_quota (fingerprint TEXT NOT NULL, date TEXT NOT NULL, count INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (fingerprint, date));
+    CREATE TABLE IF NOT EXISTS mail_log (email TEXT NOT NULL, day INTEGER NOT NULL, kind TEXT NOT NULL, sent_at TEXT NOT NULL, PRIMARY KEY (email, day, kind));
     CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS subscribers (email TEXT PRIMARY KEY, token TEXT NOT NULL, status TEXT NOT NULL, created_at TEXT NOT NULL, confirmed_at TEXT, last_sent_day INTEGER NOT NULL DEFAULT 0);`);
   const clock = options.clock || options.now || (() => new Date());
@@ -606,6 +621,23 @@ export function createEngine(options = {}) {
       db.prepare("SELECT data FROM snapshots WHERE id=1").get().data,
     );
     s.runtime.nextRunAt = nextScheduledRun(now());
+    const active = db
+      .prepare("SELECT phase,context FROM runs WHERE status='running' LIMIT 1")
+      .get();
+    if (active) {
+      const parsed = JSON.parse(active.context);
+      s.runtime.nextPhaseAt =
+        parsed.kind === "scheduled"
+          ? phaseTime(parsed.date || localDate(now()), active.phase).toISOString()
+          : null;
+      s.runtime.shiftEndsAt = phaseTime(
+        parsed.date || localDate(now()),
+        SHIFT_PLAN.length - 1,
+      ).toISOString();
+    } else {
+      s.runtime.nextPhaseAt = null;
+      s.runtime.shiftEndsAt = null;
+    }
     s.runtime.dailyCallLimit = dailyCallLimit;
     const today = localDate(now());
     s.runtime.callsToday =
@@ -651,7 +683,7 @@ export function createEngine(options = {}) {
     });
     current.events = current.events.slice(0, 160);
   };
-  function checkpoint(context, phase) {
+  function checkpoint(context, phase, release = false) {
     if (closed) throw new Error("Engine closed");
     db.exec("BEGIN IMMEDIATE");
     try {
@@ -666,7 +698,7 @@ export function createEngine(options = {}) {
       ).run(
         phase,
         JSON.stringify(context),
-        new Date(now().getTime() + 180000).toISOString(),
+        new Date(now().getTime() + (release ? -1000 : 180000)).toISOString(),
         context.id,
       );
       save();
@@ -815,13 +847,32 @@ export function createEngine(options = {}) {
       fallbackReasons: [...context.fallbackReasons],
     });
     const persistPhase = (phase) => checkpoint(serializeContext(), phase);
+    // Scheduled shifts follow the clock; owner and bootstrap runs finish at once.
+    const timed = context.kind === "scheduled";
+    const runDate = context.date || localDate(now());
+    const due = (phase) => !timed || now() >= phaseTime(runDate, phase);
+    // Parking keeps the label of the step that just finished, so the panel shows
+    // what the office is doing now rather than what it will do next.
+    const park = (phase) => {
+      current.runtime.status = "running";
+      current.runtime.nextPhaseAt = phaseTime(runDate, phase).toISOString();
+      checkpoint(serializeContext(), phase, true);
+      return {
+        started: true,
+        completed: false,
+        waiting: phase,
+        id: context.id,
+        day: context.day,
+      };
+    };
     try {
       if (startingPhase <= 0) {
+        if (!due(0)) return park(0);
         current.company.day = context.day;
         current.runtime = {
           ...current.runtime,
           status: "running",
-          phase: "08.00 · Ekip güne hazırlanıyor",
+          phase: SHIFT_PLAN[0].label,
           mode: "rules",
           provider:
             apiKey && context.kind !== "bootstrap"
@@ -853,8 +904,36 @@ export function createEngine(options = {}) {
         await wait(delay);
       }
       if (startingPhase <= 1) {
-        current.runtime.phase = "Fikirler · Her rol kendi önerisini hazırlıyor";
-        persistPhase(1);
+        if (!due(1)) return park(1);
+        current.runtime.phase = SHIFT_PLAN[1].label;
+        current.agents.forEach((a) => {
+          a.status = "working";
+          a.task = `Günlük toplantı · ${a.duty}`;
+        });
+        context.plan = current.agents.map((a) => ({
+          agentId: a.id,
+          name: a.name,
+          role: a.role,
+          line: `${a.duty}. ${a.memories[0] ? `Dünden taşıdığı not: ${a.memories[0].effect}` : `İlk ölçüt: ${a.skills[0]} tarafında tek bir somut adım.`}`,
+        }));
+        event(
+          context,
+          "mert",
+          "daily",
+          `Günlük toplantı yapıldı. ${current.agents.length} kişi bugünkü işini ve ölçütünü paylaştı. Faaliyet alanı: ${current.company.focus}.`,
+        );
+        for (const item of context.plan)
+          event(context, item.agentId, "plan", `Bugünkü işim: ${item.line}`);
+        persistPhase(2);
+        await deliverPlan(context).catch(() =>
+          console.error("Plan mail failed; the shift continues."),
+        );
+        await wait(delay);
+      }
+      if (startingPhase <= 2) {
+        if (!due(2)) return park(2);
+        current.runtime.phase = SHIFT_PLAN[2].label;
+        persistPhase(2);
         const roster = current.agents;
         if (context.brief && !context.commissionId) {
           const drafted = validateNewStrategy(
@@ -996,11 +1075,12 @@ export function createEngine(options = {}) {
           a.task = "Alternatifleri tartışıyor ve bütçeyi değerlendiriyor";
           a.energy = 82;
         });
-        persistPhase(2);
+        persistPhase(3);
         await wait(delay);
       }
-      if (startingPhase <= 2) {
-        current.runtime.phase = "Yönetim kurulu · Oylama ve bütçe";
+      if (startingPhase <= 3) {
+        if (!due(3)) return park(3);
+        current.runtime.phase = SHIFT_PLAN[3].label;
         const candidates = context.proposals;
         const preferred = candidates[0];
         context.strategy = preferred.strategy;
@@ -1055,7 +1135,10 @@ export function createEngine(options = {}) {
             createdAt: now().toISOString(),
           };
           current.decisions.unshift(decision);
-          if (selected) context.decisionId = decision.id;
+          if (selected) {
+            context.decisionId = decision.id;
+            context.decisionMail = { yesCount, headcount };
+          }
           event(
             context,
             "deniz",
@@ -1087,12 +1170,23 @@ export function createEngine(options = {}) {
         });
         current.decisions = current.decisions.slice(0, 60);
         current.tasks = current.tasks.slice(0, 120);
-        persistPhase(3);
+        persistPhase(4);
+        const chosen = current.decisions.find((d) => d.id === context.decisionId);
+        if (chosen)
+          await deliverDecision(
+            context,
+            chosen,
+            context.decisionMail?.yesCount ?? 0,
+            context.decisionMail?.headcount ?? current.agents.length,
+          ).catch(() =>
+            console.error("Decision mail failed; the shift continues."),
+          );
         await wait(delay);
       }
-      if (startingPhase <= 3) {
-        current.runtime.phase = "Üretim · Pilot dosyası, model ve prototip";
-        persistPhase(3);
+      if (startingPhase <= 4) {
+        if (!due(4)) return park(4);
+        current.runtime.phase = SHIFT_PLAN[4].label;
+        persistPhase(4);
         const document = await ai(
           context,
           "artifact-board",
@@ -1160,11 +1254,12 @@ export function createEngine(options = {}) {
           "review",
           "Teknik kontrol: HTML prototipinde yalnız yerel senaryo hesaplayıcısı var; dış kaynak, ağ isteği ve veri toplama yok. CSV senaryoları indirilebilir durumda.",
         );
-        persistPhase(4);
+        persistPhase(5);
         await wait(delay);
       }
-      if (startingPhase <= 4) {
-        current.runtime.phase = "Pazar testi · Sentetik talep ve sonuç";
+      if (startingPhase <= 5) {
+        if (!due(5)) return park(5);
+        current.runtime.phase = SHIFT_PLAN[5].label;
         const result = context.researchOnly
           ? {
               success: false,
@@ -1237,12 +1332,12 @@ export function createEngine(options = {}) {
           "finance",
           `Kasa ${current.company.cash.toLocaleString("tr-TR")} simülasyon TL. Bordro ${payroll} TL ödendi, ${current.company.customers} müşteriden ${recurring} TL bakım geliri yazıldı. Gerçek para hareketi yapılmadı. ${result.revenue + recurring - result.cost - payroll < 0 ? "Bu gün nakit eridi; sonraki seçim puanı bu sonucu dikkate alacak." : "Pozitif nakit, işe alım ve zam kapasitesini artırdı."}`,
         );
-        persistPhase(5);
+        persistPhase(6);
         await wait(delay);
       }
-      if (startingPhase <= 5) {
-        current.runtime.phase =
-          "Retrospektif · Öğrenimler kalıcı belleğe yazılıyor";
+      if (startingPhase <= 6) {
+        if (!due(6)) return park(6);
+        current.runtime.phase = SHIFT_PLAN[6].label;
         const key = context.strategy.id;
         const r = context.result;
         const previous = current.learning[key] || {
@@ -1658,6 +1753,7 @@ export function createEngine(options = {}) {
           id: `run-${randomUUID()}`,
           key: runKey,
           kind,
+          date: localDate(now()),
           brief: cleanText(brief, 900).trim(),
           day: current.company.day + 1,
           eventCount: 0,
@@ -1812,17 +1908,83 @@ export function createEngine(options = {}) {
       .prepare("SELECT COUNT(*) AS n FROM subscribers WHERE status='confirmed'")
       .get().n;
 
+  // Each message goes out once per subscriber per day, whatever restarts happen.
+  function recipients(day, kind) {
+    return db
+      .prepare(
+        "SELECT email,token FROM subscribers WHERE status='confirmed' AND email NOT IN (SELECT email FROM mail_log WHERE day=? AND kind=?) LIMIT 500",
+      )
+      .all(day, kind);
+  }
+  function markSent(day, kind, people) {
+    const stamp = now().toISOString();
+    for (const person of people)
+      db.prepare(
+        "INSERT OR IGNORE INTO mail_log(email,day,kind,sent_at) VALUES(?,?,?,?)",
+      ).run(person.email, day, kind, stamp);
+    db.exec("DELETE FROM mail_log WHERE day < (SELECT MAX(day)-40 FROM mail_log)");
+  }
+  const moneyText = (value) =>
+    `${new Intl.NumberFormat("tr-TR").format(Math.round(value))} TL`;
+
+  async function deliverPlan(context) {
+    const people = recipients(context.day, "plan");
+    if (!people.length) return { sent: 0, reason: "no_subscribers" };
+    const rows = (context.plan || [])
+      .map(
+        (item) =>
+          `<tr><td style="padding:9px 12px 9px 0;border-bottom:1px solid #e2e6dc;white-space:nowrap"><b>${escapeMail(item.name)}</b><br><span style="font-size:11px;color:#7a847b">${escapeMail(item.role)}</span></td><td style="padding:9px 0;border-bottom:1px solid #e2e6dc;font-size:13px;line-height:1.6">${escapeMail(item.line)}</td></tr>`,
+      )
+      .join("");
+    const body = `<p style="font-size:15px;line-height:1.7">Mesai 08.00'de başladı, 17.00'de bitecek. Faaliyet alanı <b>${escapeMail(current.company.focus)}</b>, kadro ${current.agents.length} kişi, bordro ${moneyText(current.company.payroll)}.</p>
+<p style="font-size:13px;color:#7a847b">Günlük toplantıda herkes bugün ne yapacağını ve neyi ölçeceğini söyledi:</p>
+<table style="width:100%;border-collapse:collapse">${rows}</table>
+<p style="font-size:14px;line-height:1.7">Karar öğleye doğru çıkar, dosyalar öğleden sonra teslim edilir, sonuç ve gün sonu tablosu 17.00'de gelir.</p>
+<p><a href="${publicUrl}/panel" style="display:inline-block;background:#263f2c;color:#f6f7ee;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600">Ofisi canlı izle</a></p>`;
+    const result = await sendMails(
+      people.map((person) => ({
+        to: person.email,
+        subject: `MESAI · ${context.day}. mesai başladı: bugünün planı`,
+        html: mailShell(`${context.day}. mesai başladı`, body, person.token),
+      })),
+    );
+    if (result.sent) markSent(context.day, "plan", people);
+    return result;
+  }
+
+  async function deliverDecision(context, decision, yesCount, headcount) {
+    const people = recipients(context.day, "decision");
+    if (!people.length) return { sent: 0, reason: "no_subscribers" };
+    const against = decision.votes
+      .filter((v) => v.vote === "no")
+      .slice(0, 2)
+      .map(
+        (v) =>
+          `<li style="margin-bottom:8px">${escapeMail(current.agents.find((a) => a.id === v.agentId)?.name || "")}: ${escapeMail(v.reason)}</li>`,
+      )
+      .join("");
+    const body = `<p style="font-size:15px;line-height:1.7">Ekip bugünkü işini seçti: <b>${escapeMail(decision.title)}</b>.</p>
+<p style="font-size:14px;line-height:1.7">${escapeMail(decision.summary)}</p>
+<p style="font-size:14px;line-height:1.7">Oylama: <b>${yesCount}/${headcount}</b> destek. ${context.brief ? "Bu iş kurucudan geldi." : ""}</p>
+${against ? `<p style="font-size:13px;color:#7a847b">Karşı görüşler:</p><ul style="font-size:13px;line-height:1.6;color:#5f6d5e">${against}</ul>` : "<p style=\"font-size:13px;color:#7a847b\">Bu kararda karşı oy çıkmadı.</p>"}
+<p><a href="${publicUrl}/panel#decisions" style="display:inline-block;background:#263f2c;color:#f6f7ee;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600">Kararı ve oyları gör</a></p>`;
+    const result = await sendMails(
+      people.map((person) => ({
+        to: person.email,
+        subject: `MESAI · ${context.day}. mesai: karar verildi`,
+        html: mailShell("Bugünün kararı", body, person.token),
+      })),
+    );
+    if (result.sent) markSent(context.day, "decision", people);
+    return result;
+  }
+
   async function deliverDigest(day) {
     const entry = (current.ledger || []).find((e) => e.day === day);
     if (!entry) return { sent: 0, reason: "no_entry" };
-    const people = db
-      .prepare(
-        "SELECT email,token FROM subscribers WHERE status='confirmed' AND last_sent_day < ? LIMIT 500",
-      )
-      .all(day);
+    const people = recipients(day, "digest");
     if (!people.length) return { sent: 0, reason: "no_subscribers" };
-    const money = (value) =>
-      `${new Intl.NumberFormat("tr-TR").format(Math.round(value))} TL`;
+    const money = moneyText;
     const hires = current.events.filter(
       (e) => e.day === day && e.type === "hiring",
     );
@@ -1841,14 +2003,11 @@ export function createEngine(options = {}) {
     const result = await sendMails(
       people.map((person) => ({
         to: person.email,
-        subject: `MESAI · ${day}. mesai: ${entry.success ? "sonuç alındı" : "sonuç alınamadı"}`,
+        subject: `MESAI · ${day}. mesai bitti: ${entry.success ? "sonuç alındı" : "sonuç alınamadı"}`,
         html: mailShell(`${day}. mesaide neler oldu`, body, person.token),
       })),
     );
-    if (result.sent)
-      db.prepare(
-        "UPDATE subscribers SET last_sent_day=? WHERE status='confirmed' AND last_sent_day < ?",
-      ).run(day, day);
+    if (result.sent) markSent(day, "digest", people);
     return result;
   }
 
@@ -2057,6 +2216,7 @@ export function createEngine(options = {}) {
     visitorFeed,
     visitorStatus,
     subscribe,
+    deliverPlan,
     confirmSubscriber,
     unsubscribe,
     subscriberCount,

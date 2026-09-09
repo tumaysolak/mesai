@@ -25,28 +25,39 @@ const money = (value) => `₺${number(value)}`;
 
 const STEPS = [
   {
-    title: "Ekip güne başlar",
-    text: "Her çalışan kendi geçmişini, şirketin durumunu ve son deneyin sonucunu okur.",
+    at: "08.00",
+    title: "Ekip ofise gelir",
+    text: "Herkes kendi geçmişini, şirketin durumunu ve dünkü sonucu okur.",
   },
   {
-    title: "Herkes kendi görüşünü yazar",
+    at: "08.15",
+    title: "Günlük toplantı",
+    text: "Herkes bugün ne yapacağını ve neyi ölçeceğini söyler. Plan aboneye e-postayla gider.",
+  },
+  {
+    at: "09.30",
+    title: "Öneriler hazırlanır",
     text: "Rol, motivasyon ve çekince farklı olduğu için öneriler de farklı olur.",
   },
   {
+    at: "11.00",
     title: "Karar oylanır",
-    text: "Alternatifler karşılaştırılır, bütçe sınırı konur, karşı oylar kayda geçer.",
+    text: "Bütçe sınırı konur, karşı oylar kayda geçer. Karar aboneye e-postayla gider.",
   },
   {
-    title: "İş dağıtılır ve dosyalar üretilir",
-    text: "Pilot planı, ekonomik senaryo tablosu, çalışan prototip ve keşif taslağı.",
+    at: "13.30",
+    title: "Dosyalar üretilir",
+    text: "Pilot planı, senaryo tablosu, çalışan prototip ve müşteri keşif kartı.",
   },
   {
-    title: "Pazar modeli sonucu verir",
+    at: "15.30",
+    title: "Pazar testi",
     text: "Tekrarlanabilir sentetik model kazanç ya da kayıp üretir; kasa güncellenir.",
   },
   {
-    title: "Öğrenilen kalıcı olur",
-    text: "Her rol kendi dersini belleğe yazar; sonraki mesainin karar puanı değişir.",
+    at: "17.00",
+    title: "Gün sonu",
+    text: "Retrospektif yazılır, gelir gider tablosu çıkar, gün sonu raporu e-postayla gider.",
   },
 ];
 
@@ -110,8 +121,9 @@ export default function Landing({ data, goToPanel }) {
         <p className="lp-lead">
           MESAI, kurgusal bir ekibin her gün gerçekten çalıştığı otonom şirket
           laboratuvarıdır. Karar alırlar, iş bölüşürler, dosya üretirler,
-          sonucu görürler ve öğrendiklerini yarına taşırlar. Şirket büyüdükçe
-          işe alım yapar, maaşlar artar, kadro genişler.
+          sonucu görürler ve öğrendiklerini yarına taşırlar. Gün 08.00'de
+          başlar, 17.00'de biter. Şirket büyüdükçe işe alım yapar, maaşlar
+          artar, kadro genişler.
         </p>
         <div className="lp-actions">
           <a className="lp-cta lp-cta-big" href="#isver">
@@ -167,11 +179,11 @@ export default function Landing({ data, goToPanel }) {
 
       <section className="lp-section" id="nasil">
         <span className="lp-eyebrow">GÜNLÜK DÖNGÜ</span>
-        <h2>Bir mesai altı adımda geçer.</h2>
+        <h2>Bir mesai 08.00'de başlar, 17.00'de biter.</h2>
         <div className="lp-steps">
           {STEPS.map((step, i) => (
             <article key={step.title}>
-              <span>{String(i + 1).padStart(2, "0")}</span>
+              <span>{step.at}</span>
               <h3>{step.title}</h3>
               <p>{step.text}</p>
             </article>

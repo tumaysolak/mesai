@@ -218,6 +218,7 @@ const ZONES = {
 };
 export function zoneFor(phase = "", status = "", index = 0) {
   if (status === "offline") return "home";
+  if (/toplantı/.test(phase)) return "meeting";
   if (/Fikirler/.test(phase)) return index % 4 === 0 ? "meeting" : "desk";
   if (/kurulu/.test(phase)) return "meeting";
   if (/Üretim/.test(phase)) return index % 3 === 0 ? "meeting" : "desk";
@@ -593,7 +594,8 @@ function Overview({
             <span className="live-dot" />
             <b>CANLI</b>
             <span>
-              İstanbul {clock} · {company.day}. mesai
+              İstanbul {clock} · {company.day}. mesai ·{" "}
+              {runtime.status === "running" ? "08.00-17.00 açık" : "kapalı"}
             </span>
           </div>
         }
@@ -723,7 +725,8 @@ function Overview({
               mesai başına
             </span>
             <span>
-              <Clock3 size={13} /> Sonraki mesai{" "}
+              <Clock3 size={13} />{" "}
+              {runtime.status === "running" ? "Mesainin bitişine" : "Sonraki mesai"}{" "}
               <b>{runtime.status === "paused" ? "duraklatıldı" : nextText}</b>
             </span>
           </div>
@@ -1958,10 +1961,19 @@ export default function App() {
     (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
   );
   const shownEvents = allEvents;
-  const nextMs = data?.runtime.nextRunAt
-    ? Math.max(0, new Date(data.runtime.nextRunAt).getTime() - now)
-    : 0;
-  const nextText = !data?.runtime.nextRunAt
+  const running = data?.runtime.status === "running";
+  const target = running
+    ? data?.runtime.shiftEndsAt || data?.runtime.nextRunAt
+    : data?.runtime.nextRunAt;
+  const nextMs = target ? Math.max(0, new Date(target).getTime() - now) : 0;
+  const stepAt = data?.runtime.nextPhaseAt
+    ? new Intl.DateTimeFormat("tr-TR", {
+        timeZone: "Europe/Istanbul",
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(new Date(data.runtime.nextPhaseAt))
+    : null;
+  const nextText = !target
     ? "—"
     : nextMs > 0
       ? `${Math.floor(nextMs / 3600000)
@@ -2037,16 +2049,26 @@ export default function App() {
           <div className="next-shift">
             <div>
               <span className="sun-symbol">☀</span>
-              <span>BİR SONRAKİ MESAI</span>
+              <span>
+                {data?.runtime.status === "running"
+                  ? "MESAI SÜRÜYOR"
+                  : "BİR SONRAKİ MESAI"}
+              </span>
             </div>
             <strong>
-              {data?.runtime.status === "paused" ? "Beklemede" : "08.00"}
+              {data?.runtime.status === "paused"
+                ? "Beklemede"
+                : data?.runtime.status === "running"
+                  ? "17.00"
+                  : "08.00"}
               <span>İstanbul</span>
             </strong>
             <p>
               {data?.runtime.status === "paused"
                 ? "Kurucu zamanlamayı duraklattı."
-                : "Yeni bir gün. Yeni olasılıklar."}
+                : data?.runtime.status === "running"
+                  ? `${data.runtime.phase}${stepAt ? ` · sıradaki adım ${stepAt}` : ""}`
+                  : "Mesai 08.00'de başlar, 17.00'de biter."}
             </p>
             <div className="shift-track">
               <i

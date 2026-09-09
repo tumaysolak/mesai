@@ -171,10 +171,15 @@ test("08:00 schedule runs once per Istanbul date, including weekends and startup
   let clock = new Date("2026-09-12T04:59:59Z"); // Saturday
   const engine = engineFor(t, { clock: () => clock });
   assert.equal((await engine.tick()).reason, "before_schedule");
-  clock = new Date("2026-09-12T05:00:00Z");
+  clock = new Date("2026-09-12T05:00:00Z"); // 08:00, the shift opens
+  const opened = await engine.tick();
+  assert.equal(opened.started, true);
+  assert.equal(opened.completed, false, "mesai 17.00'ye kadar sürer");
+  assert.equal(engine.state().runtime.status, "running");
+  clock = new Date("2026-09-12T14:00:00Z"); // 17:00, the shift closes
   assert.equal((await engine.tick()).completed, true);
   assert.equal((await engine.tick()).reason, "duplicate");
-  clock = new Date("2026-09-13T11:30:00Z"); // restart/catch-up well after 08:00
+  clock = new Date("2026-09-13T15:30:00Z"); // restart after the whole day is due
   assert.equal((await engine.tick()).completed, true);
   assert.equal(engine.state().company.day, 2);
   assert.equal((await engine.tick()).reason, "duplicate");
@@ -190,7 +195,7 @@ test("owner pause survives restart and blocks manual and scheduled days", async 
   assert.equal((await engine.tick()).reason, "paused");
   assert.equal((await engine.run({ key: "paused" })).reason, "paused");
   engine.pause(false);
-  assert.equal((await engine.tick()).completed, true);
+  assert.equal((await engine.tick()).started, true);
 });
 
 test("completed day, learned policy, memories, files and run identity survive reopening the database", async (t) => {
@@ -702,4 +707,62 @@ test("visitor answers always carry the real employees, never invented ones", asy
   }
   assert.doesNotMatch(JSON.stringify(result.work.notes), /Uydurma Rol/);
   assert.equal(engine.visitorFeed().length, 1);
+});
+
+test("a scheduled shift walks the clock from 08.00 to 17.00 and mails at each step", async (t) => {
+  let clock = new Date("2026-09-14T05:00:00Z"); // 08:00 Istanbul
+  const dir = await mkdtemp(join(tmpdir(), "mesai-shift-"));
+  t.after(() => rm(dir, { recursive: true, force: true }));
+  const databasePath = join(dir, "shift.db");
+  const sent = [];
+  const engine = engineFor(t, {
+    databasePath,
+    clock: () => clock,
+    resendKey: "test-resend-key",
+    fetchImpl: async (url, options) => {
+      if (String(url).includes("resend")) {
+        sent.push(JSON.parse(options.body));
+        return { ok: true, status: 200, json: async () => ({}) };
+      }
+      throw new Error("no ai");
+    },
+  });
+  const db = new DatabaseSync(databasePath);
+  db.prepare(
+    "INSERT INTO subscribers(email,token,status,created_at,confirmed_at) VALUES('okur@example.com','tok','confirmed',?,?)",
+  ).run(clock.toISOString(), clock.toISOString());
+  db.close();
+
+  assert.equal((await engine.tick()).completed, false);
+  assert.match(engine.state().runtime.phase, /08\.00/);
+  assert.equal(sent.length, 0, "08.00'da henüz posta yok");
+
+  clock = new Date("2026-09-14T05:15:00Z"); // 08:15 daily
+  assert.equal((await engine.tick()).completed, false);
+  assert.match(engine.state().runtime.phase, /toplantı/);
+  assert.equal(sent.length, 1);
+  assert.match(sent[0][0].subject, /bugünün planı/);
+  assert.match(sent[0][0].html, /Günlük toplantıda/);
+  assert.ok(engine.state().events.some((e) => e.type === "daily"));
+  assert.ok(engine.state().events.some((e) => e.type === "plan"));
+
+  clock = new Date("2026-09-14T08:00:00Z"); // 11:00 board
+  assert.equal((await engine.tick()).completed, false);
+  assert.equal(sent.length, 2);
+  assert.match(sent[1][0].subject, /karar verildi/);
+  assert.equal(engine.state().decisions.length > 0, true);
+
+  clock = new Date("2026-09-14T10:30:00Z"); // 13:30 production
+  assert.equal((await engine.tick()).completed, false);
+  assert.equal(engine.state().artifacts.length, 4);
+
+  clock = new Date("2026-09-14T14:00:00Z"); // 17:00 close
+  assert.equal((await engine.tick()).completed, true);
+  assert.equal(sent.length, 3);
+  assert.match(sent[2][0].subject, /mesai bitti/);
+  assert.equal(engine.state().artifacts.length, 5);
+  assert.equal(engine.state().runtime.status, "idle");
+  // the same day never mails twice, even if the shift is re-entered
+  assert.equal((await engine.tick()).reason, "duplicate");
+  assert.equal(sent.length, 3);
 });

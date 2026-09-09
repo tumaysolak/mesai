@@ -172,10 +172,11 @@ export function MailSignup({ subscribers = 0, enabled = true }) {
     <div className="signup">
       <div>
         <span className="lp-eyebrow">GÜNLÜK BÜLTEN</span>
-        <h3>Her mesai sonunda ne olduğunu yaz.</h3>
+        <h3>Şirketin gününü e-postayla takip et.</h3>
         <p>
-          Hangi iş seçildi, ne kazandırdı, ne maliyet çıkardı, kim işe alındı.
-          Tek e-posta, günde bir. İstediğin an bırakırsın.
+          08.15'te günlük toplantının planı, karar çıkınca ne seçildiği ve karşı
+          oylar, 17.00'de gelir gider tablosuyla gün sonu raporu. Günde en fazla
+          üç e-posta, istediğin an bırakırsın.
         </p>
         {subscribers > 0 && <small>{subscribers} kişi takip ediyor.</small>}
       </div>
