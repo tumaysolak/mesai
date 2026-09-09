@@ -508,7 +508,15 @@ export function createEngine(options = {}) {
     CREATE TABLE IF NOT EXISTS history (day INTEGER PRIMARY KEY, data TEXT NOT NULL);`);
   const clock = options.clock || options.now || (() => new Date());
   const now = () => new Date(typeof clock === "function" ? clock() : clock);
-  const delay = Math.max(0, options.phaseDelayMs ?? options.delayMs ?? 1200);
+  // Phases are paced so an observer can watch the office move; the lease is 180s.
+  const configuredDelay = Number(process.env.PHASE_DELAY_MS);
+  const delay = clamp(
+    options.phaseDelayMs ??
+      options.delayMs ??
+      (Number.isFinite(configuredDelay) ? configuredDelay : 9000),
+    0,
+    25000,
+  );
   const apiKey = options.apiKey ?? process.env.OPENAI_API_KEY ?? "";
   const model = options.model || process.env.OPENAI_MODEL || "gpt-5-mini";
   const fetchImpl = options.fetchImpl || globalThis.fetch;

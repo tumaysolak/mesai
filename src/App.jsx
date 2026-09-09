@@ -41,6 +41,7 @@ import {
   TrendingUp,
   Trophy,
   Users,
+  Wallet,
   Vote,
   X,
   Zap,
@@ -210,6 +211,7 @@ const ZONES = {
   desk: { left: 56, right: 90, top: 56, bottom: 128 },
   market: { left: 8, right: 42, top: 198, bottom: 266 },
   social: { left: 56, right: 90, top: 198, bottom: 266 },
+  door: { left: 2, right: 15, top: 148, bottom: 188 },
   home: { left: -12, right: -7, top: 150, bottom: 205 },
 };
 export function zoneFor(phase = "", status = "", index = 0) {
@@ -219,8 +221,11 @@ export function zoneFor(phase = "", status = "", index = 0) {
   if (/Üretim/.test(phase)) return index % 3 === 0 ? "meeting" : "desk";
   if (/Pazar/.test(phase)) return "market";
   if (/Retrospektif/.test(phase)) return index % 4 === 3 ? "social" : "meeting";
-  if (/hazırlanıyor/.test(phase)) return index % 2 ? "desk" : "meeting";
-  return ["desk", "social", "market", "social", "desk", "market"][index % 6];
+  // The morning starts at the corridor door, so the arrival is actually visible.
+  if (/hazırlanıyor/.test(phase)) return "door";
+  return ["desk", "social", "meeting", "market", "desk", "social", "meeting", "market"][
+    index % 8
+  ];
 }
 function seatIn(zone, index) {
   const box = ZONES[zone] || ZONES.desk;
@@ -592,7 +597,7 @@ function Overview({
             Fikirden işe.<span className="heading-emphasis"> Her gün.</span>
           </>
         }
-        description="Sekiz farklı karakter. Ortak bir hedef. Kendi kendine ilerleyen bir şirket."
+        description={`${agents.length} farklı karakter. Ortak bir hedef. Kendi kendine ilerleyen, büyüyen bir şirket.`}
         action={
           <button
             className={`button button-dark ${replay ? "replay-button" : ""}`}
@@ -714,6 +719,10 @@ function Overview({
             <span>
               <span className="status-dot" />
               {labelStatus(runtime.status)}
+            </span>
+            <span>
+              <Wallet size={13} /> Bordro <b>{money(company.payroll || 0)}</b> ·
+              mesai başına
             </span>
             <span>
               <Clock3 size={13} /> Sonraki mesai{" "}
@@ -1339,8 +1348,10 @@ function About({ data }) {
           <Users size={24} />
           <h2>Karakterler kurgusal, farklılıkları anlamlı.</h2>
           <p>
-            Geçmiş deneyimleri, motivasyonları ve korkuları olan sekiz kurgusal
-            persona. Hiçbiri gerçek bir kişinin kopyası değildir. Bu özellikler
+            Geçmiş deneyimleri, motivasyonları ve korkuları olan kurgusal
+            personalar. Kurucu ekip sekiz kişiydi; şirket büyüdükçe aday
+            havuzundan yeni karakterler katılır. Hiçbiri gerçek bir kişinin
+            kopyası değildir. Bu özellikler
             klinik tanı veya psikolojik değerlendirme olarak sunulmaz.
           </p>
         </section>
