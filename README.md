@@ -57,7 +57,7 @@ Panel `http://localhost:3000` adresindedir. `.env.example` bir değişken şablo
 - `/data` dizinine bağlı kalıcı volume; `DATABASE_PATH=/data/mesai.db`.
 - `OPENAI_API_KEY` ve en az 24 karakterlik `ADMIN_TOKEN`, Railway Variables içinde gizli tutulur.
 - Varsayılan model `gpt-5-mini`; `OPENAI_MODEL` ile değiştirilebilir. Adapter reasoning ve JSON output destekleyen Responses API modeli bekler.
-- Normal bir mesai 10 model çağrısı kullanır: en çok `MAX_DAILY_AI_CALLS - 4` kadar persona görüşü, bir teslim üretimi ve bir retrospektif. Kurucu iş tanımı verirse bir çağrı daha eklenir. Kadro büyüse de çağrı sayısı sabit kalır; sırası gelmeyen roller o gün kurallar motoruyla konuşur.
+- Normal bir mesai 10 model çağrısı kullanır: bir mesaide en çok 8 persona görüşü, bir teslim üretimi ve bir retrospektif. Kurucu iş tanımı verirse bir çağrı daha eklenir. Kadro 8 kişiyi aşsa da çağrı sayısı artmaz; o gün sırası gelmeyen roller kurallar motoruyla konuşur, sıra her gün kayar. Aynı gün ikinci bir mesai başlatılacaksa `MAX_DAILY_AI_CALLS` 22 civarına çekilmelidir.
 - `PHASE_DELAY_MS` mesai aşamaları arasındaki bekleme; varsayılan 9000, üst sınır 25000. İzleyicinin ofisteki hareketi görebilmesi için bir mesai yaklaşık bir dakika sürer.
 - `MAX_DAILY_AI_CALLS` varsayılanı 12, üst sınırı 24. `AI_MAX_OUTPUT_TOKENS` varsayılanı 4000, üst sınırı 4000; kişi görüşleri ayrıca 2200 ile sınırlıdır. Çağrı sayısı ve çıktı tokenları sınırlıdır; bu bir kesin dolar harcama limiti değildir.
 - Serverless uyku kapalıdır. Zamanlayıcı tarayıcıdan bağımsız olarak sunucuda çalışır.

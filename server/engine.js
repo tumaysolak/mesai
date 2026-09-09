@@ -778,8 +778,9 @@ export function createEngine(options = {}) {
         const ranked = availableStrategies()
           .map((s) => ({ ...s, score: scoreStrategy(s, current) }))
           .sort((a, b) => b.score - a.score);
-        // Council model calls stay bounded so a growing team never inflates the daily bill.
-        const councilBudget = Math.max(1, dailyCallLimit - 4);
+        // Council model calls are capped at eight a shift, whatever the headcount, so a
+        // growing team never inflates the daily bill; the rotation gives everyone turns.
+        const councilBudget = Math.max(1, Math.min(8, dailyCallLimit - 4));
         const offset = roster.length ? context.day % roster.length : 0;
         const speaking = new Set(
           [...roster.slice(offset), ...roster.slice(0, offset)]
