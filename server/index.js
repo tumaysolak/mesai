@@ -232,6 +232,35 @@ export function createApp({
     }
   });
 
+  const accessHits = new Map();
+  app.post("/api/access", async (req, res) => {
+    const email = String(req.body?.email || "").trim().slice(0, 160);
+    const subscribe = req.body?.subscribe === true;
+    const source = String(req.body?.source || "panel").slice(0, 60);
+    const now = Date.now();
+    const last = accessHits.get(req.ip) || 0;
+    if (now - last < 4000)
+      return res.status(429).json({ error: "Biraz yavaş." });
+    accessHits.set(req.ip, now);
+    if (accessHits.size > 5000) accessHits.clear();
+    const result = await engine.grantAccess({ email, subscribe, source });
+    if (result.error)
+      return res.status(400).json({ error: "Geçerli bir e-posta yaz." });
+    res.json({
+      token: result.token,
+      returning: result.returning,
+      mail: result.mail,
+    });
+  });
+  app.post("/api/access/ping", (req, res) =>
+    res.json(engine.touchAccess(String(req.body?.token || ""))),
+  );
+  app.get("/api/admin/visitors", owner, (req, res) =>
+    res.json({
+      visitors: engine.accessList(Number(req.query.limit) || 200),
+      total: engine.accessCount(),
+    }),
+  );
   const contactHits = new Map();
   app.post("/api/contact", async (req, res) => {
     const body = req.body || {};

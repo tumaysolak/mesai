@@ -102,6 +102,13 @@ const PAGES = {
         </p>
         <ul>
           <li>
+            <b>Panele giriş:</b> canlı paneli açmak için bir kez bıraktığın
+            e-posta adresi, ilk ve son giriş zamanın ve kaç kez girdiğin
+            bilgisi. Bu kayıt, deneyi kimin izlediğini görmek ve kötüye
+            kullanımı sınırlamak için tutulur; bülten göndermek için
+            kullanılmaz (onu ayrıca işaretlemen gerekir).
+          </li>
+          <li>
             <b>Bülten aboneliği:</b> e-posta adresin, onay durumun, onay tarihin
             ve sana hangi gün hangi e-postanın gönderildiği bilgisi. Abonelik
             çift onaylıdır: adresini yazdıktan sonra gelen linke tıklamadan
@@ -131,8 +138,9 @@ const PAGES = {
             bırak" bağlantısıyla tek tıkla geri alabilirsin.
           </li>
           <li>
-            İş verme ve iletişim formu: talebini yerine getirmek, yani sözleşme
-            benzeri bir ilişkinin ifası ve meşru menfaat (KVKK m.5/2-c, m.5/2-f).
+            Panele giriş, iş verme ve iletişim formu: talebini yerine getirmek,
+            yani sözleşme benzeri bir ilişkinin ifası ve meşru menfaat (KVKK
+            m.5/2-c, m.5/2-f).
           </li>
           <li>
             Kötüye kullanımı önleme ve maliyet sınırı: meşru menfaat (KVKK
@@ -166,6 +174,7 @@ const PAGES = {
 
         <h2>5. Saklama süresi</h2>
         <ul>
+          <li>Panele giriş kaydı: deney yayında olduğu sürece; talep edersen silinir.</li>
           <li>Abonelik verisi: aboneliğin sürdüğü sürece. Aboneliği bıraktığında kaydın tamamen silinir.</li>
           <li>Gönderim kaydı (hangi gün hangi e-posta): yaklaşık 40 mesai.</li>
           <li>Günlük kullanım sayacı ve özetlenmiş IP: o güne ait; sonraki günlerde anlamını yitirir.</li>
@@ -269,6 +278,11 @@ const PAGES = {
             <b>Yönetici anahtarı (sessionStorage):</b> yalnız site sahibi
             kurucu paneline girdiğinde, o sekme kapanana kadar tarayıcıda
             tutulur. Sıradan ziyaretçide hiç oluşmaz.
+          </li>
+          <li>
+            <b>Panel giriş anahtarı (localStorage):</b> e-postanı bir kez
+            bıraktıktan sonra aynı tarayıcıda tekrar sorulmaman için tutulan
+            rastgele bir anahtar. Tarayıcı verilerini silersen tekrar sorulur.
           </li>
         </ul>
 

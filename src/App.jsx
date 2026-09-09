@@ -3,6 +3,7 @@ import Landing from "./Landing.jsx";
 import Markdown from "./Markdown.jsx";
 import Reports from "./Reports.jsx";
 import Legal, { LEGAL_ROUTES } from "./Legal.jsx";
+import Gate, { readAccess } from "./Gate.jsx";
 import {
   Finance,
   Ledger,
@@ -26,6 +27,7 @@ import {
   Clock3,
   Code2,
   Coffee,
+  Copy,
   Download,
   Eye,
   FileText,
@@ -1641,6 +1643,92 @@ function ArtifactModal({ artifact, onClose }) {
   );
 }
 
+// Who opened the office, when, and how often — the founder's own list.
+function Visitors({ token }) {
+  const [rows, setRows] = useState(null),
+    [total, setTotal] = useState(0),
+    [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (!open || rows) return;
+    fetch("/api/admin/visitors?limit=200", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then((d) => {
+        setRows(d.visitors || []);
+        setTotal(d.total || 0);
+      })
+      .catch(() => setRows([]));
+  }, [open, rows, token]);
+  const when = (value) =>
+    value
+      ? new Date(value).toLocaleString("tr-TR", {
+          timeZone: "Europe/Istanbul",
+          day: "2-digit",
+          month: "2-digit",
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : "—";
+  return (
+    <div className="owner-visitors">
+      <button className="text-button" onClick={() => setOpen(!open)}>
+        <Users size={15} /> {open ? "İzleyici listesini kapat" : "Paneli kimler izledi"}
+        {total ? ` (${total})` : ""}
+      </button>
+      {open && (
+        <div className="visitor-table">
+          {!rows ? (
+            <p className="owner-note">Liste yükleniyor…</p>
+          ) : rows.length === 0 ? (
+            <p className="owner-note">Henüz kimse e-posta bırakmadı.</p>
+          ) : (
+            <>
+              <div className="visitor-head">
+                <span>E-posta</span>
+                <span>İlk giriş</span>
+                <span>Son giriş</span>
+                <span>Ziyaret</span>
+              </div>
+              {rows.map((row) => (
+                <div className="visitor-row" key={row.email}>
+                  <span>
+                    {row.email}
+                    {row.subscribed && <b title="Bültene abone"> · bülten</b>}
+                  </span>
+                  <span>{when(row.firstSeen)}</span>
+                  <span>{when(row.lastSeen)}</span>
+                  <span>{row.visits}</span>
+                </div>
+              ))}
+              <button
+                className="text-button muted"
+                onClick={() => {
+                  const csv = [
+                    "email,ilk_giris,son_giris,ziyaret,bulten",
+                    ...rows.map((r) =>
+                      [
+                        r.email,
+                        r.firstSeen,
+                        r.lastSeen,
+                        r.visits,
+                        r.subscribed ? "evet" : "hayir",
+                      ].join(","),
+                    ),
+                  ].join("\n");
+                  navigator.clipboard?.writeText(csv);
+                }}
+              >
+                <Copy size={14} /> Listeyi CSV olarak kopyala
+              </button>
+            </>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function OwnerModal({
   onClose,
   token,
@@ -1804,6 +1892,7 @@ function OwnerModal({
             Bu işlem gerçek şirket kaydını günceller. Her mesai karar, görev ve
             çıktı oluşturur. AI modu açıksa günlük çağrı sınırı geçerlidir.
           </p>
+          <Visitors token={token} />
           <button className="text-button muted" onClick={logout}>
             <LogOut size={15} /> Yönetici oturumunu kapat
           </button>
@@ -1896,6 +1985,7 @@ export default function App() {
   const [now, setNow] = useState(Date.now()),
     [clock, setClock] = useState("");
   const [route, setRoute] = useState(() => routeFor(window.location.pathname));
+  const [access, setAccess] = useState(() => readAccess());
   const [admin, setAdmin] = useState(false),
     [token, setToken] = useState(() => {
       try {
@@ -1975,6 +2065,14 @@ export default function App() {
     };
   }, []);
   useEffect(() => {
+    if (!access || route !== "panel") return;
+    fetch("/api/access/ping", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token: access }),
+    }).catch(() => {});
+  }, [access, route]);
+  useEffect(() => {
     if (!token) return;
     let alive = true;
     fetch("/api/admin/check", { headers: { Authorization: `Bearer ${token}` } })
@@ -2036,6 +2134,14 @@ export default function App() {
         page={route}
         goHome={() => goTo("/")}
         goToLegal={(id) => goTo(`/${id}`)}
+      />
+    );
+  if (route === "panel" && !access)
+    return (
+      <Gate
+        onOpen={setAccess}
+        goHome={() => goTo("/")}
+        watchers={data?.community?.watchers || 0}
       />
     );
   if (route === "landing")

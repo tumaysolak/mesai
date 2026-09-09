@@ -692,6 +692,7 @@ export function createEngine(options = {}) {
     CREATE TABLE IF NOT EXISTS visitor_quota (fingerprint TEXT NOT NULL, date TEXT NOT NULL, count INTEGER NOT NULL DEFAULT 0, PRIMARY KEY (fingerprint, date));
     CREATE TABLE IF NOT EXISTS mail_log (email TEXT NOT NULL, day INTEGER NOT NULL, kind TEXT NOT NULL, sent_at TEXT NOT NULL, PRIMARY KEY (email, day, kind));
     CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS access (email TEXT PRIMARY KEY, token TEXT NOT NULL UNIQUE, created_at TEXT NOT NULL, last_seen TEXT NOT NULL, visits INTEGER NOT NULL DEFAULT 1, subscribed INTEGER NOT NULL DEFAULT 0, source TEXT NOT NULL DEFAULT '');
     CREATE TABLE IF NOT EXISTS reports (day INTEGER PRIMARY KEY, date TEXT NOT NULL, focus TEXT NOT NULL DEFAULT '', work TEXT NOT NULL DEFAULT '', plan TEXT NOT NULL DEFAULT '[]', report TEXT NOT NULL DEFAULT '', summary TEXT NOT NULL DEFAULT '{}', started_at TEXT NOT NULL, closed_at TEXT);
     CREATE TABLE IF NOT EXISTS subscribers (email TEXT PRIMARY KEY, token TEXT NOT NULL, status TEXT NOT NULL, created_at TEXT NOT NULL, confirmed_at TEXT, last_sent_day INTEGER NOT NULL DEFAULT 0);`);
   const clock = options.clock || options.now || (() => new Date());
@@ -774,6 +775,7 @@ export function createEngine(options = {}) {
         .prepare("SELECT COUNT(*) AS n FROM visitor_work")
         .get().n,
       mailEnabled: Boolean(resendKey),
+      watchers: db.prepare("SELECT COUNT(*) AS n FROM access").get().n,
     };
     // Public state deliberately omits internal policy weights and credentials.
     delete s.learning;
@@ -2341,7 +2343,7 @@ export function createEngine(options = {}) {
   const mailShell = (title, body, token) =>
     `<div style="font-family:system-ui,sans-serif;max-width:560px;margin:auto;color:#22332c"><p style="font-weight:800;letter-spacing:.12em;font-size:13px">MES<span style="color:#6f9a4b">AI</span>.</p><h1 style="font-size:22px;line-height:1.3">${escapeMail(title)}</h1>${body}<hr style="border:0;border-top:1px solid #e2e6dc;margin:26px 0"><p style="font-size:11px;color:#7a847b">MESAI kurgusal bir otonom şirket simülasyonudur. Para, müşteri ve maaşlar sentetiktir.${token ? ` <a href="${publicUrl}/api/mail/unsubscribe?token=${token}" style="color:#7a847b">Bülteni bırak</a>.` : ""}</p></div>`;
 
-  async function subscribe(email) {
+  async function subscribe_(email) {
     if (!validEmail(email)) return { error: "invalid" };
     const address = email.trim().toLowerCase();
     const existing = db
@@ -2390,6 +2392,7 @@ export function createEngine(options = {}) {
     return { status: "removed" };
   }
 
+  const subscribe = subscribe_;
   const subscriberCount = () =>
     db
       .prepare("SELECT COUNT(*) AS n FROM subscribers WHERE status='confirmed'")
@@ -2442,6 +2445,62 @@ export function createEngine(options = {}) {
       },
     ]);
   }
+
+  // Watching the office is free, but it costs one e-mail address, once per browser.
+  async function grantAccess({ email, subscribe = false, source = "" } = {}) {
+    if (!validEmail(email)) return { error: "invalid" };
+    const address = email.trim().toLowerCase();
+    const stamp = now().toISOString();
+    const existing = db
+      .prepare("SELECT token,visits FROM access WHERE email=?")
+      .get(address);
+    const token = existing?.token || randomUUID().replaceAll("-", "");
+    db.prepare(
+      "INSERT INTO access(email,token,created_at,last_seen,visits,subscribed,source) VALUES(?,?,?,?,1,?,?) " +
+        "ON CONFLICT(email) DO UPDATE SET last_seen=excluded.last_seen, visits=access.visits+1, subscribed=MAX(access.subscribed,excluded.subscribed)",
+    ).run(
+      address,
+      token,
+      stamp,
+      stamp,
+      subscribe ? 1 : 0,
+      cleanText(source, 60),
+    );
+    let mail = "skipped";
+    if (subscribe) {
+      const result = await subscribe_(address);
+      mail = result.status || result.error || "failed";
+    }
+    return { token, email: address, mail, returning: Boolean(existing) };
+  }
+  function touchAccess(token) {
+    if (!token || typeof token !== "string") return { ok: false };
+    const row = db
+      .prepare("SELECT email FROM access WHERE token=?")
+      .get(token.slice(0, 64));
+    if (!row) return { ok: false };
+    db.prepare(
+      "UPDATE access SET last_seen=?, visits=visits+1 WHERE token=?",
+    ).run(now().toISOString(), token.slice(0, 64));
+    return { ok: true };
+  }
+  function accessList(limit = 200) {
+    return db
+      .prepare(
+        "SELECT email,created_at,last_seen,visits,subscribed,source FROM access ORDER BY last_seen DESC LIMIT ?",
+      )
+      .all(Math.min(Math.max(Number(limit) || 200, 1), 500))
+      .map((row) => ({
+        email: row.email,
+        firstSeen: row.created_at,
+        lastSeen: row.last_seen,
+        visits: row.visits,
+        subscribed: Boolean(row.subscribed),
+        source: row.source,
+      }));
+  }
+  const accessCount = () =>
+    db.prepare("SELECT COUNT(*) AS n FROM access").get().n;
 
   // iletisim@mesailabs.com is a real mailbox: Resend receives it and posts it here.
   async function forwardInbound(mail) {
@@ -2784,6 +2843,10 @@ ${current.finance?.crisisDays ? `<p style="font-size:14px;line-height:1.7;backgr
     deliverPlan,
     deliverStory,
     contact,
+    grantAccess,
+    touchAccess,
+    accessList,
+    accessCount,
     forwardInbound,
     reportList,
     reportDay,

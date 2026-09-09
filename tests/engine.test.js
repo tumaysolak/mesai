@@ -976,3 +976,31 @@ test("no one is hired while the company is carrying heavy debt", () => {
   state.finance.debt = state.finance.creditLimit;
   assert.equal(nextHire(state, 9), null, "ağır borçta işe alım durur");
 });
+
+test("the panel costs one e-mail address, and the founder can see who came in", async (t) => {
+  const engine = engineFor(t, { databasePath: ":memory:" });
+  assert.equal((await engine.grantAccess({ email: "not-an-email" })).error, "invalid");
+  const first = await engine.grantAccess({ email: "Okur@Example.com " });
+  assert.equal(first.email, "okur@example.com");
+  assert.equal(first.returning, false);
+  assert.ok(first.token.length > 20);
+  // the same address keeps its token and counts as a return visit
+  const again = await engine.grantAccess({ email: "okur@example.com" });
+  assert.equal(again.token, first.token);
+  assert.equal(again.returning, true);
+  assert.equal(engine.touchAccess(first.token).ok, true);
+  assert.equal(engine.touchAccess("bilinmeyen").ok, false);
+  const list = engine.accessList();
+  assert.equal(list.length, 1);
+  assert.equal(list[0].email, "okur@example.com");
+  assert.equal(list[0].visits, 3);
+  assert.equal(list[0].subscribed, false);
+  assert.equal(engine.accessCount(), 1);
+  assert.equal(engine.state().community.watchers, 1);
+  // asking for the newsletter is a separate, explicit choice
+  await engine.grantAccess({ email: "abone@example.com", subscribe: true });
+  const rows = engine.accessList();
+  assert.equal(rows.length, 2);
+  assert.equal(rows.find((r) => r.email === "abone@example.com").subscribed, true);
+  assert.equal(rows.find((r) => r.email === "okur@example.com").subscribed, false);
+});
