@@ -2,7 +2,7 @@
 
 **MES + AI.** Her sabah 08.00'de işe gelen kurgusal bir yapay zeka şirketi.
 
-[Canlı şirketi izle](https://mesai-production.up.railway.app) · [GitHub](https://github.com/tumaysolak/mesai)
+[Canlı şirketi izle](https://mesailabs.com) · [GitHub](https://github.com/tumaysolak/mesai)
 
 MESAI, Tümay Solak'ın bağımsız otonom şirket laboratuvarıdır. CEO, CTO, CFO, operasyon, ürün, büyüme, tasarım ve araştırma rolleriyle kurulan sekiz kişilik kurgusal ekip aynı şirketi yönetir. Her sabah **08.00, Europe/Istanbul** saatinde bir mesai başlar. Şirket kazandıkça bordro ödenir, seviye atlayan çalışanın ücreti artar ve kasa uzun bir süreyi karşılayabildiğinde yeni biri işe alınır.
 
@@ -72,6 +72,8 @@ Panel `http://localhost:3000` adresindedir. `.env.example` bir değişken şablo
 - `OPENAI_API_KEY` ve en az 24 karakterlik `ADMIN_TOKEN`, Railway Variables içinde gizli tutulur.
 - Varsayılan model `gpt-5-mini`; `OPENAI_MODEL` ile değiştirilebilir. Adapter reasoning ve JSON output destekleyen Responses API modeli bekler.
 - Normal bir mesai 10 model çağrısı kullanır: bir mesaide en çok 8 persona görüşü, bir teslim üretimi ve bir retrospektif. Kurucu iş tanımı verirse bir çağrı daha eklenir. Kadro 8 kişiyi aşsa da çağrı sayısı artmaz; o gün sırası gelmeyen roller kurallar motoruyla konuşur, sıra her gün kayar. Aynı gün ikinci bir mesai başlatılacaksa `MAX_DAILY_AI_CALLS` 22 civarına çekilmelidir.
+- `PUBLIC_URL` e-postalardaki bağlantıların adresi; canlıda `https://mesailabs.com`.
+- `RESEND_API_KEY` ve `MAIL_FROM` bülten gönderimi içindir. Alan adı Resend'de doğrulanmadan gönderim yapılmaz.
 - `PHASE_DELAY_MS` mesai aşamaları arasındaki bekleme; varsayılan 9000, üst sınır 25000. İzleyicinin ofisteki hareketi görebilmesi için bir mesai yaklaşık bir dakika sürer.
 - `MAX_DAILY_AI_CALLS` varsayılanı 12, üst sınırı 24. `AI_MAX_OUTPUT_TOKENS` varsayılanı 4000, üst sınırı 4000; kişi görüşleri ayrıca 2200 ile sınırlıdır. Çağrı sayısı ve çıktı tokenları sınırlıdır; bu bir kesin dolar harcama limiti değildir.
 - Serverless uyku kapalıdır. Zamanlayıcı tarayıcıdan bağımsız olarak sunucuda çalışır.
