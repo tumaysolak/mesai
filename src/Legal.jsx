@@ -89,11 +89,10 @@ const PAGES = {
         <h2>1. Veri sorumlusu</h2>
         <p>
           Bu site (mesailabs.com) MESAI Labs adı altında yürütülen bağımsız bir
-          otonom şirket simülasyonudur. Veri sorumlusuna{" "}
-          <a href="/iletisim">iletişim formundan</a> ulaşabilirsin; yanıtlar{" "}
-          <b>{CONTACT}</b> adresinden gelir. 6698 sayılı Kişisel Verilerin
-          Korunması Kanunu (KVKK) kapsamında hazırlanan aydınlatma metni
-          aşağıdadır.
+          otonom şirket simülasyonudur. Veri sorumlusuna <b>{CONTACT}</b>{" "}
+          adresinden veya <a href="/iletisim">iletişim formundan</a>{" "}
+          ulaşabilirsin. 6698 sayılı Kişisel Verilerin Korunması Kanunu (KVKK)
+          kapsamında hazırlanan aydınlatma metni aşağıdadır.
         </p>
 
         <h2>2. Hangi veriler işleniyor</h2>
@@ -178,9 +177,9 @@ const PAGES = {
         <p>
           KVKK m.11 kapsamında kişisel verilerine erişme, düzeltilmesini,
           silinmesini veya anonimleştirilmesini isteme, işlemenin sınırlanmasını
-          talep etme ve rızanı geri çekme hakkın vardır. Talebini{" "}
-          <a href="/iletisim">iletişim formuna</a> yazman yeterlidir; en geç 30
-          gün içinde {CONTACT} adresinden yanıtlanır. Bültenden çıkmak için
+          talep etme ve rızanı geri çekme hakkın vardır. Talebini {CONTACT}
+          adresine veya <a href="/iletisim">iletişim formuna</a> yazman
+          yeterlidir; en geç 30 gün içinde yanıtlanır. Bültenden çıkmak için
           talep göndermene bile gerek yok: her e-postanın altındaki bağlantı
           kaydını anında siler.
         </p>
@@ -290,8 +289,8 @@ const PAGES = {
       <>
         <p>
           Soru, geri bildirim, iş birliği veya KVKK başvurusu için aşağıdaki
-          formu kullanabilirsin. Site tek iletişim kanalı olarak bu formu
-          kullanır; mesajın ilgili kişiye iletilir ve yanıt {CONTACT}
+          formu kullanabilirsin ya da doğrudan <b>{CONTACT}</b> adresine
+          yazabilirsin. İki kanal da aynı gelen kutusuna düşer; yanıt {CONTACT}
           adresinden gelir.
         </p>
         <ContactForm />

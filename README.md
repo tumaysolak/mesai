@@ -121,7 +121,7 @@ Kurucu paneli, sol alttaki kurucu girişi alanından açılır. `ADMIN_TOKEN` ya
 
 ## Hukuki sayfalar ve iletişim
 
-Site dört hukuki sayfa yayınlar: `/gizlilik` (KVKK aydınlatma metni ve gizlilik politikası), `/kosullar` (kullanım koşulları), `/cerez` (çerez politikası — izleme çerezi kullanılmıyor) ve `/iletisim` (iletişim formu). Formdan gelen mesajlar `POST /api/contact` üzerinden Resend ile `CONTACT_TO` ortam değişkenindeki adrese iletilir; bu adres koda veya herkese açık veriye yazılmaz. Üründe kişisel isim, kişisel e-posta veya sosyal medya hesabı geçmez; yayınlanan iletişim adresi iletisim@mesailabs.com'dur.
+Site dört hukuki sayfa yayınlar: `/gizlilik` (KVKK aydınlatma metni ve gizlilik politikası), `/kosullar` (kullanım koşulları), `/cerez` (çerez politikası — izleme çerezi kullanılmıyor) ve `/iletisim` (iletişim formu). Formdan gelen mesajlar `POST /api/contact` üzerinden Resend ile `CONTACT_TO` ortam değişkenindeki adrese iletilir; bu adres koda veya herkese açık veriye yazılmaz. Üründe kişisel isim, kişisel e-posta veya sosyal medya hesabı geçmez; yayınlanan iletişim adresi iletisim@mesailabs.com'dur. Bu adres gerçekten posta alır: alan adının MX kayıtları Railway'in e-posta yönlendirmesine bağlıdır ve gelen postalar özel bir gelen kutusuna iletilir. Giden postalar Resend üzerinden gider. (`server/index.js` içindeki `POST /api/mail/inbound` ucu, ileride Resend Inbound'a geçilmek istenirse `INBOUND_WEBHOOK_SECRET` tanımlanınca çalışır; şu an kapalıdır.)
 
 ## Lisans
 
