@@ -13,6 +13,8 @@ import {
   nextHire,
   payrollOf,
   migrate,
+  conditionFor,
+  CONDITIONS,
 } from "../server/engine.js";
 import { CANDIDATES, PERSONAS, STRATEGIES } from "../server/personas.js";
 
@@ -765,4 +767,93 @@ test("a scheduled shift walks the clock from 08.00 to 17.00 and mails at each st
   // the same day never mails twice, even if the shift is re-entered
   assert.equal((await engine.tick()).reason, "duplicate");
   assert.equal(sent.length, 3);
+});
+
+test("the world outside the company moves and the market model feels it", () => {
+  const days = Array.from({ length: 40 }, (_, i) =>
+    conditionFor(`2026-10-${String((i % 28) + 1).padStart(2, "0")}`),
+  );
+  assert.equal(conditionFor("2026-10-05").id, conditionFor("2026-10-05").id);
+  assert.ok(new Set(days.map((c) => c.id)).size >= 3, "koşullar değişmeli");
+  assert.ok(days.every((c) => CONDITIONS.some((x) => x.id === c.id)));
+  const input = {
+    strategy: STRATEGIES[0],
+    budget: 900,
+    day: 3,
+    reputation: 50,
+    seed: "weather",
+  };
+  const calm = simulateMarket({ ...input });
+  const bad = simulateMarket({
+    ...input,
+    condition: CONDITIONS.find((c) => c.id === "downturn"),
+  });
+  assert.ok(bad.probability < calm.probability, "daralmada olasılık düşmeli");
+  assert.ok(bad.cost > calm.cost, "daralmada maliyet artmalı");
+  assert.equal(bad.profit, bad.revenue - bad.cost);
+  const sad = simulateMarket({ ...input, morale: 40 });
+  assert.ok(sad.probability < calm.probability, "moral sonucu etkilemeli");
+});
+
+test("wins become a product line, repeated losses close it and the company writes its own rules", async (t) => {
+  const engine = engineFor(t, { fetchImpl: () => { throw new Error("no ai"); } });
+  for (let day = 1; day <= 8; day++) await engine.run({ key: `organic-${day}` });
+  const state = engine.state();
+  assert.ok(Array.isArray(state.products));
+  assert.ok(Array.isArray(state.principles));
+  assert.ok(
+    state.products.length > 0 || state.company.customers === 0,
+    "kazanılan iş ürün hattına yazılmalı",
+  );
+  for (const product of state.products) {
+    assert.ok(product.title && product.field);
+    assert.ok(["active", "retired"].includes(product.status));
+  }
+  assert.equal(
+    state.company.customers,
+    state.products
+      .filter((p) => p.status === "active")
+      .reduce((n, p) => n + p.customers, 0),
+    "müşteri sayısı ürün hatlarıyla tutmalı",
+  );
+  assert.ok(state.ledger.every((entry) => entry.condition));
+  assert.equal(typeof state.company.roughDays, "number");
+});
+
+test("a company that runs out of runway loses the people it hired last", async (t) => {
+  const databasePath = await dbFor(t);
+  const options = { fetchImpl: () => { throw new Error("no ai"); } };
+  let engine = createEngine({ ...base, ...options, databasePath });
+  await engine.run({ key: "shrink-1" });
+  await engine.close();
+  const db = new DatabaseSync(databasePath);
+  const snapshot = JSON.parse(
+    db.prepare("SELECT data FROM snapshots WHERE id=1").get().data,
+  );
+  snapshot.company.cash = 400000;
+  snapshot.company.reputation = 70;
+  snapshot.company.day = 4;
+  db.prepare("UPDATE snapshots SET data=? WHERE id=1").run(JSON.stringify(snapshot));
+  db.close();
+  engine = createEngine({ ...base, ...options, databasePath });
+  await engine.run({ key: "shrink-2" });
+  const hired = engine.state();
+  assert.equal(hired.agents.length, 9, "önce işe alım olmalı");
+  const db2 = new DatabaseSync(databasePath);
+  const broke = JSON.parse(
+    db2.prepare("SELECT data FROM snapshots WHERE id=1").get().data,
+  );
+  broke.company.cash = 900; // bordronun altına düşen kasa
+  db2.prepare("UPDATE snapshots SET data=? WHERE id=1").run(JSON.stringify(broke));
+  db2.close();
+  await engine.close();
+  const engine3 = engineFor(t, { ...options, databasePath });
+  await engine3.run({ key: "shrink-3" });
+  const after = engine3.state();
+  assert.equal(after.agents.length, 8, "kasa dayanmayınca kadro daralmalı");
+  assert.equal(after.agents.every((a) => a.founder), true);
+  assert.equal(after.company.headcount, 8);
+  assert.equal(after.company.payroll, payrollOf(after.agents));
+  assert.ok(after.hiring.departures >= 1);
+  assert.ok(after.events.some((e) => e.type === "departure"));
 });

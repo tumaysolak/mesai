@@ -49,6 +49,16 @@ Her mesai bir gün sonu raporu üretir: seçilen iş, sonuç, pilot geliri, bak�
 
 Şirketin faaliyet alanı sabit değildir. Üst üste sonuç alınamayan bir alandan çıkılır veya olumlu sinyal alınan yeni bir alana geçilir; değişim akışta "Faaliyet alanı güncellendi" olarak kaydedilir.
 
+## Organik şirket
+
+Şirket sabit bir senaryoyu tekrarlamaz; kendi geçmişine ve dışarıdaki koşullara göre büyür ya da küçülür.
+
+- **Dış etkenler:** her günün kendi piyasa koşulu vardır (sakin piyasa, enerji fiyatlarında sıçrama, tatil dönemi, rakip lansmanı, yeni düzenleme, ekonomik daralma, ağızdan ağıza ilgi). Koşul talebi ve maliyeti değiştirir, istemlere girer, gün sonu raporunda yazar. Koşul tarihe göre tekrarlanabilir biçimde belirlenir, rastgele değil.
+- **Ürün hattı:** kazanılan işler kalıcı bir ürüne dönüşür ve müşterileriyle birlikte bakım geliri üretir. Aynı üründe üst üste sonuç alınamazsa ürün durdurulur ve müşterileri düşer. İtibar 45'in altına inerse hattan müşteri kaybedilir.
+- **Küçülme:** kasa bordronun beş mesailik karşılığının altına inerse ya da moral düşükken üst üste üç gün nakit erirse en son işe alınan kişi ekipten ayrılır. Bordro, moral ve takım uyumu düşer. Kurucu ekip kadroda kalır.
+- **Moral ve karar kalitesi:** moral pazar sonucunu doğrudan etkiler, yani kötü bir dönem kendi kendini besleyebilir. Ekip bundan ancak daha iyi kararla çıkar.
+- **Kendi ilkeleri:** tekrar eden sonuçlardan ilke çıkarılır ("şu alanda talep doğrulanmadan bütçe ayırma", "bordro büyümeden gelir tarafını büyüt"). İlkeler panelde görünür ve sonraki mesailerin istemine eklenir, yani şirket kendi yazdığı kurallara göre karar vermeye başlar.
+
 ## Kurucu modu: ekibe iş verme
 
 Panelin kurucu alanına bir iş tanımı yazıldığında ekip o mesaide kendi gündemini bırakır ve bu işi önceliklendirir: roller bu iş üzerinden tartışır, karar ve karşı oylar kaydedilir, dört dosya bu konu için üretilir. Karar kartı `Kurucu talebi` etiketiyle görünür. Bu alan yalnız `ADMIN_TOKEN` ile açılır.

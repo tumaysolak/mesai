@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import Landing from "./Landing.jsx";
 import Markdown from "./Markdown.jsx";
-import { Ledger, MailSignup, VisitorTask } from "./Community.jsx";
+import { Ledger, MailSignup, Organic, VisitorTask } from "./Community.jsx";
 import Portrait from "./Portrait.jsx";
 import {
   Activity,
@@ -42,6 +42,11 @@ import {
   Target,
   TrendingUp,
   Trophy,
+  CalendarClock,
+  CloudSun,
+  Compass,
+  Package,
+  UserMinus,
   Users,
   Wallet,
   Vote,
@@ -387,13 +392,23 @@ function EventFeed({ events, agents, compact = false }) {
       ) : (
         shown.map((event, i) => {
           const agent = findAgent(agents, event.agentId);
-          const Icon = event.type?.includes("decision")
-            ? GitFork
-            : event.type?.includes("artifact")
-              ? FileText
-              : event.type?.includes("learn")
-                ? BrainCircuit
-                : Sparkles;
+          const Icon =
+            {
+              decision: GitFork,
+              artifact: FileText,
+              learning: BrainCircuit,
+              principle: BrainCircuit,
+              world: CloudSun,
+              product: Package,
+              churn: TrendingUp,
+              departure: UserMinus,
+              hiring: Users,
+              raise: Wallet,
+              pivot: Compass,
+              daily: CalendarClock,
+              plan: CheckCheck,
+              finance: Wallet,
+            }[event.type] || Sparkles;
           return (
             <div
               className="event-item"
@@ -675,6 +690,15 @@ function Overview({
           </button>
         </div>
       </div>
+      {company.condition && (
+        <div className="world-strip">
+          <span>
+            <CloudSun size={15} /> BUGÜNÜN KOŞULLARI
+          </span>
+          <b>{company.condition}</b>
+          <p>{company.conditionNote}</p>
+        </div>
+      )}
       <Ledger entries={data.ledger || []} money={money} />
       <section className="panel visitor-panel">
         <VisitorTask compact />
@@ -1303,6 +1327,11 @@ function Learning({ data, openAgent }) {
           </article>
         ))}
       </div>
+      <Organic
+        products={data.products || []}
+        principles={data.principles || []}
+        departures={data.hiring?.departures || 0}
+      />
       <div className="section-row spaced">
         <h2>Şirketin kilometre taşları</h2>
       </div>

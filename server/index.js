@@ -60,6 +60,32 @@ export function createApp({
     attempts.delete(ip);
     next();
   }
+  const site = (process.env.PUBLIC_URL || "https://mesailabs.com").replace(
+    /\/$/,
+    "",
+  );
+  app.get("/robots.txt", (req, res) =>
+    res
+      .type("text/plain")
+      .send(
+        `User-agent: *\nAllow: /\nDisallow: /api/\nSitemap: ${site}/sitemap.xml\n`,
+      ),
+  );
+  app.get("/sitemap.xml", (req, res) => {
+    const updated = new Date().toISOString().slice(0, 10);
+    const pages = [
+      ["/", "1.0", "daily"],
+      ["/panel", "0.9", "hourly"],
+    ];
+    res.type("application/xml").send(
+      `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${pages
+        .map(
+          ([path, priority, freq]) =>
+            `  <url><loc>${site}${path}</loc><lastmod>${updated}</lastmod><changefreq>${freq}</changefreq><priority>${priority}</priority></url>`,
+        )
+        .join("\n")}\n</urlset>\n`,
+    );
+  });
   app.get("/api/health", (req, res) => {
     const s = engine.state();
     res.json({

@@ -266,6 +266,81 @@ export function Ledger({ entries = [], money }) {
   );
 }
 
+export function Organic({ products = [], principles = [], departures = 0 }) {
+  const active = products.filter((p) => p.status === "active");
+  const retired = products.filter((p) => p.status !== "active");
+  if (!products.length && !principles.length) return null;
+  return (
+    <div className="organic-grid">
+      <section className="panel">
+        <div className="panel-heading">
+          <div>
+            <h2>Ürün hattı</h2>
+            <p>
+              Kazanılan işler kalıcı bir hatta dönüşür, tutmayanlar kapatılır.
+              Müşteriler bu hatlardan gelir.
+            </p>
+          </div>
+          <span className="muted">{active.length} açık</span>
+        </div>
+        {products.length ? (
+          <div className="product-list">
+            {products.slice(0, 8).map((product) => (
+              <article
+                key={product.id}
+                className={product.status === "active" ? "" : "product-retired"}
+              >
+                <div>
+                  <strong>{product.title}</strong>
+                  <span>{product.field}</span>
+                </div>
+                <b>
+                  {product.status === "active"
+                    ? `${product.customers} müşteri`
+                    : `${product.retiredDay}. günde durduruldu`}
+                </b>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <p className="visitor-note">Henüz kalıcı bir ürün hattı açılmadı.</p>
+        )}
+        {departures > 0 && (
+          <p className="visitor-note">
+            Bugüne kadar {departures} kişi ekipten ayrıldı.
+          </p>
+        )}
+      </section>
+      <section className="panel">
+        <div className="panel-heading">
+          <div>
+            <h2>Şirketin ilkeleri</h2>
+            <p>
+              Tekrar eden sonuçlardan çıkarılan kurallar. Bu ilkeler sonraki
+              mesailerde ekibin istemine giriyor.
+            </p>
+          </div>
+          <span className="muted">{principles.length}</span>
+        </div>
+        {principles.length ? (
+          <ol className="principle-list">
+            {principles.map((rule) => (
+              <li key={rule.id}>
+                <span>{rule.day}. gün</span>
+                <p>{rule.text}</p>
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <p className="visitor-note">
+            Henüz yeterince tekrar eden bir sonuç yok; ilkeler zamanla yazılacak.
+          </p>
+        )}
+      </section>
+    </div>
+  );
+}
+
 export function VisitorFeed() {
   const [works, setWorks] = useState([]);
   useEffect(() => {
