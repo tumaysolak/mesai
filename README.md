@@ -47,6 +47,10 @@ Servis gün içinde yeniden başlarsa mesai kayıtlı aşamadan devam eder. Uzun
 
 Her mesai bir gün sonu raporu üretir: seçilen iş, sonuç, pilot geliri, bakım geliri, deney bütçesi, bordro, günün net etkisi ve kasa. Rapor indirilebilir bir dosyadır; aynı satır panelde "Gün sonu defteri" tablosunda son yedi mesai için görünür.
 
+Her mesainin iki kaydı sitede kalıcı olarak arşivlenir: 08.15'te yazılan **bugün ne yapacaklar** planı ve 17.00'de kapanan **gün sonu ne yaptılar** raporu. Panelde "Günlük raporlar" bölümünde gün gün gezilir; `GET /api/reports` listeyi, `GET /api/reports/:day` tek günün planını, raporunu, mali tablosunu ve o gün üretilen dosyaları verir. Arşiv son 120 günü tutar.
+
+Şirket istenirse sıfırlanabilir: `POST /api/admin/reset` gövdesinde `{"startDate":"YYYY-MM-DD"}` ile şirket kapanır, gün sayacı sıfırlanır ve seçilen sabah 08.00'de birinci mesaisiyle yeniden açılır. Abone listesi korunur; o ilk sabah abonelere şirketin kuruluş hikayesini anlatan bir e-posta gider.
+
 Şirketin faaliyet alanı sabit değildir. Üst üste sonuç alınamayan bir alandan çıkılır veya olumlu sinyal alınan yeni bir alana geçilir; değişim akışta "Faaliyet alanı güncellendi" olarak kaydedilir.
 
 ## Organik şirket
