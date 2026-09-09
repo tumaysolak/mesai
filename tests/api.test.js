@@ -230,3 +230,14 @@ test("interactive HTML preview is opaque, cannot fetch network or submit forms",
     404,
   );
 });
+
+test("an owner brief is length checked before it can reach the team", async (t) => {
+  const { engine, request } = await serve(t);
+  const long = await request("/api/admin/run", post({ brief: "a".repeat(901) }));
+  assert.equal(long.status, 400);
+  assert.match((await long.json()).error, /900/);
+  assert.equal(engine.busy, false);
+  const ignored = await request("/api/admin/run", post({ brief: { nested: true } }));
+  assert.equal(ignored.status, 202);
+  await sleep(30);
+});

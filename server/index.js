@@ -101,6 +101,11 @@ export function createApp({
   app.get("/api/admin/check", owner, (req, res) => res.json({ ok: true }));
   let lastManual = 0;
   app.post("/api/admin/run", owner, (req, res) => {
+    const brief = typeof req.body?.brief === "string" ? req.body.brief : "";
+    if (brief.length > 900)
+      return res
+        .status(400)
+        .json({ error: "İş tanımı en fazla 900 karakter olabilir." });
     if (engine.busy)
       return res.status(409).json({ error: "Bir mesai zaten devam ediyor." });
     if (!engine.state().config.autonomous)
@@ -113,7 +118,7 @@ export function createApp({
         .json({ error: "Yeni mesaiyi başlatmadan önce biraz bekle." });
     lastManual = Date.now();
     engine
-      .run({ kind: "manual" })
+      .run({ kind: "manual", brief })
       .catch(() =>
         console.error("Manual shift failed; durable recovery will retry."),
       );
@@ -166,7 +171,7 @@ if (
   );
   const app = createApp({ engine });
   const server = app.listen(Number(process.env.PORT) || 3000, "0.0.0.0", () =>
-    console.log("MESAİ is listening; daily schedule 08:00 Europe/Istanbul."),
+    console.log("MESAI is listening; daily schedule 08:00 Europe/Istanbul."),
   );
   const timer = setInterval(
     () =>

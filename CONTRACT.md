@@ -1,4 +1,4 @@
-# MESAİ shared implementation contract
+# MESAI shared implementation contract
 
 A Turkish public observer dashboard for an autonomous fictional venture studio focused on energy efficiency and innovation. Independent personal experiment by Tümay Solak, no employer branding or CV personal details. All people fictional. Money/customers/revenue are explicitly simulated; downloadable artifacts are real. No sending messages, spending real funds, external commits or code execution by agents. LLM mode only when OPENAI_API_KEY configured; transparently labelled rules mode otherwise.
 
@@ -6,7 +6,7 @@ Node 24, ESM, Express, node:sqlite with DATABASE_PATH default data/mesai.db, per
 
 ## GET /api/state response
 {
- company: {name:'MESAİ Labs', mission:string, day:number, level:number, xp:number, nextLevelXp:number, cash:number, revenue:number, customers:number, reputation:number, morale:number},
+ company: {name:'MESAI Labs', mission:string, day:number, level:number, xp:number, nextLevelXp:number, cash:number, revenue:number, customers:number, reputation:number, morale:number},
  runtime: {mode:'rules'|'ai', provider:string, status:'idle'|'running'|'paused'|'error', phase:string, nextRunAt:string, timezone:'Europe/Istanbul', lastRunAt:string|null, dailyCallLimit:number, callsToday:number, error:string|null},
  agents: [{id:string,name:string,role:string,department:string,initials:string,color:string,status:string,task:string,backstory:string,motivation:string,fear:string,traits:[string],skills:[string],energy:number,morale:number,xp:number,level:number,memories:[{id:string,day:number,lesson:string,effect:string}]}],
  decisions: [{id:string,day:number,title:string,summary:string,rationale:string,status:'approved'|'rejected'|'completed',ownerId:string,category:string,votes:[{agentId:string,vote:'yes'|'no',reason:string}],expectedImpact:string,result:string|null,createdAt:string}],

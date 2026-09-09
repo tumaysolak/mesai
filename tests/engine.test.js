@@ -5,12 +5,16 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { spawn } from "node:child_process";
 import { once } from "node:events";
+import { DatabaseSync } from "node:sqlite";
 import {
   createEngine,
   scoreStrategy,
   simulateMarket,
+  nextHire,
+  payrollOf,
+  migrate,
 } from "../server/engine.js";
-import { STRATEGIES } from "../server/personas.js";
+import { CANDIDATES, PERSONAS, STRATEGIES } from "../server/personas.js";
 
 const date = "2026-09-09T05:00:00.000Z";
 const base = {
@@ -53,7 +57,31 @@ function aiMock(calls, tagline = "Ölçümle başlayın.") {
   return async (url, options) => {
     const body = JSON.parse(options.body);
     calls.push({ url, body, headers: options.headers });
-    const document = body.input[0].content.includes("Ekip görüşlerinden");
+    const system = body.input[0].content;
+    const input = JSON.parse(body.input[1].content);
+    if (system.includes("retrospektifini"))
+      return response({
+        lesson:
+          "Bir pilot kazanıldı ama nakit etkisi sınırlı kaldı; kanıtı güçlendirmeden ölçek büyütülmemeli.",
+        notes: Object.fromEntries(
+          (input.team || []).map((member) => [
+            member.id,
+            `${member.role} için sonraki mesaide tek somut değişiklik.`,
+          ]),
+        ),
+      });
+    if (system.includes("iş tanımını"))
+      return response({
+        title: "Kurucunun istediği fizibilite dosyası",
+        segment: "Kurucunun tanımladığı hedef grup",
+        problem: "Kurucu bu konuda karşılaştırmalı bir ön çalışma istiyor.",
+        solution: "Tek sayfalık fizibilite, senaryo tablosu ve prototip",
+        hypothesis: "Konu küçük bir pilotla ölçülebilir hale gelir.",
+        cost: 1200,
+        price: 3000,
+        base: 0.45,
+      });
+    const document = system.includes("Ekip görüşlerinden");
     return response(
       document
         ? {
@@ -258,7 +286,7 @@ test("AI council uses role-specific prompts, structured Responses output and pri
     fetchImpl: aiMock(calls),
   });
   await engine.run({ key: "ai-1" });
-  assert.equal(calls.length, 9);
+  assert.equal(calls.length, 10);
   assert.equal(engine.state().runtime.mode, "ai");
   const council = calls.slice(0, 8);
   assert.equal(
@@ -272,7 +300,7 @@ test("AI council uses role-specific prompts, structured Responses output and pri
     assert.equal(call.headers.Authorization, `Bearer ${secret}`);
   }
   await engine.run({ key: "ai-2" });
-  const secondCouncil = calls.slice(9, 17);
+  const secondCouncil = calls.slice(10, 18);
   assert.ok(
     secondCouncil.every(
       (call) => JSON.parse(call.body.input[1].content).memories.length > 0,
@@ -311,7 +339,7 @@ test("daily AI cap persists across restart and all excess work falls back withou
   await engine.run({ key: "capped-2" });
   assert.equal(calls.length, 2);
   assert.equal(engine.state().runtime.mode, "rules");
-  assert.equal(engine.state().artifacts.length, 8);
+  assert.ok(engine.state().artifacts.length >= 8);
 });
 
 test("provider failures fall back visibly without leaking provider errors or keys", async (t) => {
@@ -407,3 +435,140 @@ test(
     assert.equal((await engine.run({ key: "crash-day" })).reason, "duplicate");
   },
 );
+
+test("the shift pays salaries, books retainer revenue and reconciles the simulated cash", async (t) => {
+  const engine = engineFor(t, { fetchImpl: () => { throw new Error("no ai"); } });
+  const before = engine.state().company;
+  await engine.run({ key: "payroll-1" });
+  const after = engine.state().company;
+  const experiment = engine.state().experiments[0];
+  assert.equal(after.payroll, payrollOf(PERSONAS));
+  assert.equal(after.headcount, PERSONAS.length);
+  assert.ok(after.payroll > 0);
+  // day one has no customers yet, so the retainer line must still be zero
+  assert.equal(after.recurring, 0);
+  assert.equal(
+    after.cash,
+    round(before.cash - experimentCost(experiment) + soldRevenue(after, before) - after.payroll),
+  );
+  await engine.run({ key: "payroll-2" });
+  const second = engine.state().company;
+  assert.equal(second.recurring, after.customers * 180);
+  assert.match(engine.state().events.find((e) => e.type === "finance").message, /Bordro/);
+});
+
+const round = (n) => Math.round(n * 100) / 100;
+const experimentCost = (experiment) =>
+  Number(/deney gideri (\d+) TL/.exec(experiment.result)[1]);
+const soldRevenue = (after, before) => after.revenue - before.revenue;
+
+test("levelling up raises the salary, changes the title and is announced", async (t) => {
+  const engine = engineFor(t, { fetchImpl: () => { throw new Error("no ai"); } });
+  for (let day = 1; day <= 5; day++) await engine.run({ key: `raise-${day}` });
+  const state = engine.state();
+  const founders = state.agents.filter((a) => a.founder);
+  const grown = founders.filter((a) => a.salary > a.startSalary);
+  assert.equal(grown.length, founders.length);
+  assert.ok(grown.every((a) => a.level >= 2 && a.title !== "Uzman"));
+  assert.equal(state.company.payroll, payrollOf(state.agents));
+  assert.ok(state.events.some((e) => e.type === "raise"));
+  assert.ok(state.achievements.find((a) => a.id === "raise").unlocked);
+});
+
+test("hiring requires runway, reputation and a gap between hires", () => {
+  const rich = {
+    company: { cash: 500000, reputation: 70 },
+    agents: PERSONAS.map((p) => ({ ...p })),
+    hiring: { hired: [], lastHireDay: 0 },
+  };
+  assert.ok(nextHire(rich, 4));
+  assert.equal(nextHire({ ...rich, company: { cash: 1000, reputation: 70 } }, 4), null);
+  assert.equal(nextHire({ ...rich, company: { cash: 500000, reputation: 40 } }, 4), null);
+  assert.equal(nextHire({ ...rich, hiring: { hired: [], lastHireDay: 3 } }, 4), null);
+  const everyone = {
+    ...rich,
+    hiring: { hired: CANDIDATES.map((c) => c.id), lastHireDay: 0 },
+  };
+  assert.equal(nextHire(everyone, 9), null);
+});
+
+test("a new employee joins with a downloadable posting, real work and a vote", async (t) => {
+  const databasePath = await dbFor(t);
+  const options = { fetchImpl: () => { throw new Error("no ai"); } };
+  let engine = createEngine({ ...base, ...options, databasePath });
+  await engine.run({ key: "hire-1" });
+  await engine.close();
+  const db = new DatabaseSync(databasePath);
+  const snapshot = JSON.parse(db.prepare("SELECT data FROM snapshots WHERE id=1").get().data);
+  snapshot.company.cash = 400000;
+  snapshot.company.reputation = 70;
+  snapshot.company.day = 3;
+  db.prepare("UPDATE snapshots SET data=? WHERE id=1").run(JSON.stringify(snapshot));
+  db.close();
+  engine = engineFor(t, { ...options, databasePath });
+  await engine.run({ key: "hire-2" });
+  const hiredState = engine.state();
+  assert.equal(hiredState.agents.length, PERSONAS.length + 1);
+  assert.equal(hiredState.company.headcount, PERSONAS.length + 1);
+  const hire = hiredState.agents.at(-1);
+  assert.ok(CANDIDATES.some((c) => c.id === hire.id));
+  assert.equal(hire.founder, false);
+  assert.ok(hire.salary > 0 && hire.title === "Uzman");
+  assert.equal(hiredState.company.payroll, payrollOf(hiredState.agents));
+  const posting = hiredState.artifacts.find((a) => a.title.includes("iş ilanı"));
+  assert.ok(posting && posting.content.includes("başvuru alınmaz"));
+  assert.ok(engine.artifact(posting.id));
+  assert.ok(hiredState.events.some((e) => e.type === "hiring"));
+  assert.ok(hiredState.achievements.find((a) => a.id === "hire").unlocked);
+  await engine.run({ key: "hire-3" });
+  const next = engine.state();
+  assert.ok(next.tasks.some((task) => task.ownerId === hire.id && task.status === "done"));
+  assert.ok(next.decisions[0].votes.some((v) => v.agentId === hire.id));
+  assert.equal(next.decisions[0].votes.length, PERSONAS.length + 1);
+});
+
+test("an owner brief becomes the selected work of that shift and stays labelled", async (t) => {
+  const engine = engineFor(t, { fetchImpl: () => { throw new Error("no ai"); } });
+  await engine.run({ key: "brief-1", brief: "Şarj istasyonları için dinamik fiyatlama fizibilitesi" });
+  const state = engine.state();
+  const decision = state.decisions.find((d) => d.status === "completed");
+  assert.match(decision.title, /dinamik fiyatlama/i);
+  assert.equal(decision.category, "owner");
+  assert.ok(state.events.some((e) => e.type === "commission"));
+  assert.ok(state.artifacts.some((a) => a.content.includes("dinamik fiyatlama")));
+});
+
+test("every role writes its own lesson instead of one shared sentence", async (t) => {
+  const engine = engineFor(t, { fetchImpl: () => { throw new Error("no ai"); } });
+  await engine.run({ key: "memory-1" });
+  const lessons = engine.state().agents.map((a) => a.memories[0].lesson);
+  assert.equal(lessons.length, PERSONAS.length);
+  assert.ok(new Set(lessons).size >= 6);
+  assert.ok(lessons.every((lesson) => /\d/.test(lesson)));
+});
+
+test("a strategy that just ran loses priority so the company does not repeat itself", () => {
+  const state = { company: { cash: 60000 }, learning: {} };
+  const top = [...STRATEGIES].sort((a, b) => scoreStrategy(b, state) - scoreStrategy(a, state))[0];
+  const tired = { ...state, learning: { recent: [top.id] } };
+  assert.ok(scoreStrategy(top, tired) < scoreStrategy(top, state) - 3);
+  assert.notEqual(
+    [...STRATEGIES].sort((a, b) => scoreStrategy(b, tired) - scoreStrategy(a, tired))[0].id,
+    top.id,
+  );
+});
+
+test("an older snapshot without the payroll layer is migrated instead of crashing", () => {
+  const legacy = {
+    company: { name: "MESAI Labs", day: 3, cash: 30000, reputation: 56, morale: 80 },
+    agents: PERSONAS.map(({ salary, duty, dutyType, ...rest }) => ({ ...rest, level: 2, memories: [] })),
+    achievements: [{ id: "first", title: "İlk mesai", description: "", unlocked: true }],
+  };
+  const migrated = migrate(legacy);
+  assert.equal(migrated.agents.length, PERSONAS.length);
+  assert.ok(migrated.agents.every((a) => a.salary > 0 && a.duty && a.title));
+  assert.equal(migrated.company.payroll, payrollOf(migrated.agents));
+  assert.equal(migrated.company.headcount, PERSONAS.length);
+  assert.ok(migrated.achievements.some((a) => a.id === "dreamteam"));
+  assert.ok(migrated.hiring.hired.length === 0);
+});

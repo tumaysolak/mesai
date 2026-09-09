@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
+import Landing from "./Landing.jsx";
+import Portrait from "./Portrait.jsx";
 import {
   Activity,
   ArrowDown,
@@ -44,6 +46,23 @@ import {
   Zap,
 } from "lucide-react";
 
+const typeLabel = (value) =>
+  ({
+    office: "Ofisler",
+    air: "Üretim tesisleri",
+    cold: "Soğuk zincir",
+    solar: "Güneş enerjisi",
+    school: "Eğitim",
+    heat: "Atık ısı",
+    research: "Araştırma",
+    analysis: "Analiz",
+    design: "Tasarım",
+    growth: "Büyüme",
+    review: "İnceleme",
+    operations: "Operasyon",
+    strategy: "Strateji",
+    owner: "Kurucu talebi",
+  })[value] || "Ürün deneyi";
 const NAV = [
   { id: "overview", label: "Genel bakış", icon: LayoutDashboard },
   { id: "team", label: "Ekip & karakterler", icon: Users },
@@ -87,129 +106,14 @@ const labelStatus = (s) =>
     backlog: "Sırada",
     in_progress: "Üzerinde çalışılıyor",
     done: "Tamamlandı",
+    successful: "Sonuç alındı",
+    failed: "Sonuç alınamadı",
+    offline: "Ofis dışında",
+    working: "Çalışıyor",
+    resting: "Mesai bitti",
   })[s] || s;
 const fileIcon = (type) =>
   type === "csv" ? Table2 : type === "html" ? Code2 : FileText;
-
-function Portrait({ agent, index = 0, className = "", size = 48 }) {
-  const seed = agent?.name
-    ? [...agent.name].reduce((n, c) => n + c.charCodeAt(0), 0) % 8
-    : index % 8;
-  const palette = [
-    "#dbebc5",
-    "#e1daf0",
-    "#f0d1bb",
-    "#c6dfe5",
-    "#f1e4b8",
-    "#cfdacf",
-    "#e9cad0",
-    "#c7d4ef",
-  ];
-  const shirts = [
-    "#637f50",
-    "#8873a5",
-    "#bc7458",
-    "#4e7c86",
-    "#b0964e",
-    "#526c5a",
-    "#aa6576",
-    "#677bab",
-  ];
-  const skin = [
-    "#e4b087",
-    "#a96745",
-    "#e6b994",
-    "#c28660",
-    "#e9c2a0",
-    "#bd805a",
-    "#eac0a1",
-    "#d19d72",
-  ][seed];
-  const hair = [
-    "#332b27",
-    "#272527",
-    "#443027",
-    "#2c2825",
-    "#6a4732",
-    "#39312e",
-    "#41332c",
-    "#3d322a",
-  ][seed];
-  return (
-    <svg
-      className={`portrait ${className}`}
-      width={size}
-      height={size}
-      viewBox="0 0 80 80"
-      role="img"
-      aria-label={agent?.name || "Çalışan"}
-    >
-      <rect width="80" height="80" rx="24" fill={palette[seed]} />
-      {seed % 3 === 1 && (
-        <path d="M17 49V27c0-22 45-24 46 0v30H18Z" fill={hair} />
-      )}
-      <path d="M12 80V68c2-12 16-17 28-17s26 5 28 17v12" fill={shirts[seed]} />
-      <path d="M33 48h14v14c-4 6-10 6-14 0Z" fill={skin} />
-      <path d="M32 52h16v5c-5 5-11 5-16 0" fill="#000" opacity=".08" />
-      <ellipse cx="23" cy="37" rx="4" ry="6" fill={skin} />
-      <ellipse cx="57" cy="37" rx="4" ry="6" fill={skin} />
-      <rect x="23" y="16" width="34" height="40" rx="16" fill={skin} />
-      {seed % 3 === 0 ? (
-        <path
-          d="M22 32c-4-16 6-25 20-25 14 0 20 12 15 25l-6-13-10 7-11-3-7 12Z"
-          fill={hair}
-        />
-      ) : seed % 3 === 1 ? (
-        <path d="M22 31C21 7 57 5 59 30L48 19c-5 9-15 10-26 12Z" fill={hair} />
-      ) : (
-        <path d="M22 31V19C20 5 58 5 58 21v12l-6-13-24 3-6 11Z" fill={hair} />
-      )}
-      <path
-        d="M30 34h5m10 0h5"
-        stroke={hair}
-        strokeWidth="1.8"
-        strokeLinecap="round"
-      />
-      <circle cx="32" cy="38" r="1.5" fill="#352d29" />
-      <circle cx="48" cy="38" r="1.5" fill="#352d29" />
-      <path
-        d="m40 38-1 6h3"
-        stroke="#a87452"
-        strokeWidth="1.3"
-        fill="none"
-        strokeLinecap="round"
-      />
-      <path
-        d="M35 48q5 4 10 0"
-        stroke="#874e3f"
-        strokeWidth="1.5"
-        fill="none"
-        strokeLinecap="round"
-      />
-      {(seed === 0 || seed === 3 || seed === 5) && (
-        <g fill="none" stroke="#423b36" strokeWidth="1.4">
-          <rect x="25.5" y="33.5" width="12" height="9" rx="3.5" />
-          <rect x="42.5" y="33.5" width="12" height="9" rx="3.5" />
-          <path d="M38 37h4" />
-        </g>
-      )}
-      {seed === 2 && (
-        <path
-          d="M25 42q2 19 15 17 14-1 15-17l-5 8-10 3-10-3Z"
-          fill={hair}
-          opacity=".65"
-        />
-      )}
-      <path
-        d="m29 61 11 8 11-8"
-        stroke="#fff"
-        strokeOpacity=".55"
-        strokeWidth="2"
-        fill="none"
-      />
-    </svg>
-  );
-}
 
 function Modal({ title, eyebrow, children, onClose, wide = false }) {
   const ref = useRef(null);
@@ -300,11 +204,40 @@ function Tag({ children, tone = "" }) {
   return <span className={`tag ${tone}`}>{children}</span>;
 }
 
-function Office({ agents, activeId, openAgent, running = false }) {
+// The floor plan is a real map: people walk to the room the current phase belongs to.
+const ZONES = {
+  meeting: { left: 8, right: 42, top: 56, bottom: 128 },
+  desk: { left: 56, right: 90, top: 56, bottom: 128 },
+  market: { left: 8, right: 42, top: 198, bottom: 266 },
+  social: { left: 56, right: 90, top: 198, bottom: 266 },
+  home: { left: -12, right: -7, top: 150, bottom: 205 },
+};
+export function zoneFor(phase = "", status = "", index = 0) {
+  if (status === "offline") return "home";
+  if (/Fikirler/.test(phase)) return index % 4 === 0 ? "meeting" : "desk";
+  if (/kurulu/.test(phase)) return "meeting";
+  if (/Üretim/.test(phase)) return index % 3 === 0 ? "meeting" : "desk";
+  if (/Pazar/.test(phase)) return "market";
+  if (/Retrospektif/.test(phase)) return index % 4 === 3 ? "social" : "meeting";
+  if (/hazırlanıyor/.test(phase)) return index % 2 ? "desk" : "meeting";
+  return ["desk", "social", "market", "social", "desk", "market"][index % 6];
+}
+function seatIn(zone, index) {
+  const box = ZONES[zone] || ZONES.desk;
+  const column = index % 4;
+  const row = Math.floor(index / 4) % 2;
+  const drift = index >= 8 ? 4 : 0;
+  return {
+    left: `${box.left + ((box.right - box.left) / 3) * column + drift * 0.4}%`,
+    top: `${box.top + (box.bottom - box.top) * row + drift}px`,
+  };
+}
+
+function Office({ agents, activeId, openAgent, running = false, phase = "", day = 0 }) {
   return (
     <div className={`office ${running ? "office-running" : ""}`}>
       <div className="office-wall">
-        <span>MESAİ LABS</span>
+        <span>MESAI LABS</span>
         <i></i>
         <i></i>
         <i></i>
@@ -390,31 +323,37 @@ function Office({ agents, activeId, openAgent, running = false }) {
         <i />
         <i />
       </div>
-      {agents.slice(0, 8).map((agent, i) => (
-        <button
-          key={agent.id}
-          className={`office-person person-${i} ${activeId === agent.id ? "person-active" : ""}`}
-          onClick={() => openAgent(agent)}
-          aria-label={`${agent.name}, ${agent.role}. Karakteri incele`}
-        >
-          {activeId === agent.id && (
-            <span className="person-bubble">
-              <span />
-              <span />
-              <span />
+      {agents.slice(0, 16).map((agent, i) => {
+        const zone = zoneFor(phase, agent.status, i);
+        const fresh = day > 0 && agent.hiredDay === day;
+        return (
+          <button
+            key={agent.id}
+            style={{ ...seatIn(zone, i), animationDelay: `${(i % 7) * 0.35}s` }}
+            className={`office-person zone-${zone} ${activeId === agent.id ? "person-active" : ""} ${fresh ? "person-new" : ""}`}
+            onClick={() => openAgent(agent)}
+            aria-label={`${agent.name}, ${agent.role}. Karakteri incele`}
+          >
+            {activeId === agent.id && (
+              <span className="person-bubble">
+                <span />
+                <span />
+                <span />
+              </span>
+            )}
+            {fresh && <span className="person-badge">YENİ</span>}
+            <Portrait agent={agent} size={48} />
+            <span className="person-name">
+              {agent.name.split(" ")[0]}
+              <small>
+                {agent.role
+                  .replace("Chief Executive Officer", "CEO")
+                  .replace("Chief Technology Officer", "CTO")}
+              </small>
             </span>
-          )}
-          <Portrait agent={agent} size={48} />
-          <span className="person-name">
-            {agent.name.split(" ")[0]}
-            <small>
-              {agent.role
-                .replace("Chief Executive Officer", "CEO")
-                .replace("Chief Technology Officer", "CTO")}
-            </small>
-          </span>
-        </button>
-      ))}
+          </button>
+        );
+      })}
       {!agents.length && (
         <div className="office-wait">Ekip ofise yerleşiyor…</div>
       )}
@@ -470,7 +409,7 @@ function EventFeed({ events, agents, replay, compact = false }) {
               </div>
               <div className="event-body">
                 <div className="event-meta">
-                  <strong>{agent?.name?.split(" ")[0] || "MESAİ"}</strong>
+                  <strong>{agent?.name?.split(" ")[0] || "MESAI"}</strong>
                   <time>{time(event.createdAt)}</time>
                 </div>
                 <p>{event.message}</p>
@@ -602,7 +541,7 @@ function ArtifactCard({ artifact, agents, onOpen, compact = false }) {
         <div className="artifact-footer">
           <span>
             {owner && <Portrait agent={owner} size={22} />}
-            {owner?.name.split(" ")[0] || "MESAİ"}
+            {owner?.name.split(" ")[0] || "MESAI"}
           </span>
           <a
             href={`/api/artifacts/${encodeURIComponent(artifact.id)}`}
@@ -768,6 +707,8 @@ function Overview({
             activeId={activeId}
             openAgent={openAgent}
             running={runtime.status === "running" || replay}
+            phase={runtime.phase}
+            day={company.day}
           />
           <div className="office-bottom">
             <span>
@@ -924,9 +865,41 @@ function Team({ data, openAgent }) {
     <>
       <SectionHeading
         eyebrow="İNSAN GİBİ FARKLI"
-        title="Aynı ofis. Sekiz ayrı dünya."
-        description="Geçmişleri, güçlü yanları ve çekinceleri kararlarına yansır. Tüm karakterler kurgusaldır."
+        title={
+          <>
+            Aynı ofis.
+            <span className="heading-emphasis">
+              {" "}
+              {data.agents.length} ayrı dünya.
+            </span>
+          </>
+        }
+        description="Geçmişleri, güçlü yanları ve çekinceleri kararlarına yansır. Kadro büyüdükçe yeni karakterler katılır. Tüm karakterler kurgusaldır."
       />
+      <div className="payroll-bar">
+        <div>
+          <span>KADRO</span>
+          <b>{data.agents.length} kişi</b>
+          <small>{data.agents.filter((a) => a.founder).length} kurucu ekip</small>
+        </div>
+        <div>
+          <span>BORDRO · SİMÜLASYON</span>
+          <b>{money(data.company.payroll || 0)}</b>
+          <small>her mesai için</small>
+        </div>
+        <div>
+          <span>BAKIM GELİRİ · SİMÜLASYON</span>
+          <b>{money(data.company.recurring || 0)}</b>
+          <small>{number(data.company.customers)} müşteriden</small>
+        </div>
+        <div>
+          <span>TAKIM UYUMU</span>
+          <b>{clamp(data.company.teamwork || 0)}%</b>
+          <div className="meter">
+            <i style={{ width: `${clamp(data.company.teamwork || 0)}%` }} />
+          </div>
+        </div>
+      </div>
       <div className="filter-bar">
         <button
           className={department === "all" ? "filter active" : "filter"}
@@ -955,15 +928,31 @@ function Team({ data, openAgent }) {
             >
               <div className={`team-card-cover team-cover-${i % 4}`}>
                 <span className="team-level">LVL {a.level}</span>
+                {!a.founder && (
+                  <span className="team-badge">{a.hiredDay}. GÜN KATILDI</span>
+                )}
                 <Portrait agent={a} size={86} />
                 <span className="team-arrow">
                   <ArrowUpRight size={19} />
                 </span>
               </div>
               <div className="team-card-body">
-                <span className="eyebrow">{a.role}</span>
+                <span className="eyebrow">
+                  {a.role} · {a.title || "Uzman"}
+                </span>
                 <h2>{a.name}</h2>
                 <p>{a.motivation}</p>
+                <div className="team-salary">
+                  <span>Mesai ücreti · simülasyon</span>
+                  <b>
+                    {money(a.salary || 0)}
+                    {a.salary > a.startSalary && (
+                      <i>
+                        <ArrowUpRight size={11} /> zam
+                      </i>
+                    )}
+                  </b>
+                </div>
                 <div className="traits">
                   {a.traits.slice(0, 2).map((t) => (
                     <Tag key={t}>{t}</Tag>
@@ -1039,7 +1028,7 @@ function Decisions({ data, openDecision }) {
             <div className="decision-row-body">
               <div className="decision-row-kicker">
                 <span>{d.day}. GÜN</span>
-                <span>{d.category}</span>
+                <span>{typeLabel(d.category)}</span>
                 <Tag tone={d.status === "rejected" ? "red" : "green"}>
                   {labelStatus(d.status)}
                 </Tag>
@@ -1102,7 +1091,7 @@ function Tasks({ data, openAgent, openArtifact }) {
                   return (
                     <article className="task-card" key={t.id}>
                       <div className="task-kicker">
-                        <span>{t.type}</span>
+                        <span>{typeLabel(t.type)}</span>
                         <span>{t.day}. gün</span>
                       </div>
                       <h3>{t.title}</h3>
@@ -1255,7 +1244,9 @@ function Learning({ data, openAgent }) {
           <article className="experiment-card" key={e.id}>
             <div className="experiment-top">
               <FlaskConical size={20} />
-              <Tag>{labelStatus(e.status)}</Tag>
+              <Tag tone={e.status === "successful" ? "green" : "red"}>
+                {labelStatus(e.status)}
+              </Tag>
             </div>
             <h3>{e.title}</h3>
             <span className="eyebrow">HİPOTEZ</span>
@@ -1332,7 +1323,7 @@ function About({ data }) {
       <SectionHeading
         eyebrow="AÇIK BİR DENEY"
         title="Bir şirket kendi kendine büyür mü?"
-        description="MESAİ, Tümay Solak tarafından kurulan bir otonom şirket simülasyonu. Bir yanıt vermekten çok, soruyu görünür kılmak için var."
+        description="MESAI, Tümay Solak tarafından kurulan bir otonom şirket simülasyonu. Bir yanıt vermekten çok, soruyu görünür kılmak için var."
       />
       <div className="about-manifesto">
         <span>08:00</span>
@@ -1624,6 +1615,7 @@ function OwnerModal({
   const [value, setValue] = useState(token || ""),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
+    [brief, setBrief] = useState(""),
     [success, setSuccess] = useState("");
   async function check(e) {
     e.preventDefault();
@@ -1671,9 +1663,12 @@ function OwnerModal({
             : "İşlem tamamlanamadı. Anahtarı ve çalışma durumunu kontrol et.",
         );
       }
+      if (path === "run") setBrief("");
       setSuccess(
         path === "run"
-          ? "Yeni mesai başlatıldı. Gelişmeleri akıştan izleyebilirsin."
+          ? body.brief
+            ? "İş tanımın ekibe iletildi. Mesai başladı; çıktıları akıştan izleyebilirsin."
+            : "Yeni mesai başlatıldı. Gelişmeleri akıştan izleyebilirsin."
           : body.paused
             ? "Otomatik mesai duraklatıldı."
             : "Otomatik mesai devam ediyor.",
@@ -1712,6 +1707,24 @@ function OwnerModal({
             <span>Şu an</span>
             <Tag>{labelStatus(runtime.status)}</Tag>
           </div>
+          <div className="owner-brief">
+            <label htmlFor="owner-brief">
+              <Sparkles size={14} /> Ekibe iş ver
+            </label>
+            <textarea
+              id="owner-brief"
+              value={brief}
+              maxLength={900}
+              rows={3}
+              placeholder="Örnek: Şarj istasyonları için dinamik fiyatlama fizibilitesi çıkarın."
+              onChange={(e) => setBrief(e.target.value)}
+            />
+            <span>
+              Boş bırakırsan ekip kendi gündemini seçer. Yazarsan bu mesaide
+              senin işini önceliklendirir ve indirilebilir dosyaları o iş için
+              üretir. {900 - brief.length} karakter kaldı.
+            </span>
+          </div>
           <div className="owner-actions">
             <button
               className="button button-dark"
@@ -1720,10 +1733,10 @@ function OwnerModal({
                 runtime.status === "running" ||
                 runtime.status === "paused"
               }
-              onClick={() => action("run", {})}
+              onClick={() => action("run", { brief: brief.trim() })}
             >
               <Play size={16} />
-              Şimdi bir mesai başlat
+              {brief.trim() ? "Bu işle mesai başlat" : "Şimdi bir mesai başlat"}
             </button>
             <button
               className="button button-outline"
@@ -1839,6 +1852,9 @@ export default function App() {
     [replay, setReplay] = useState(false),
     [replayEvents, setReplayEvents] = useState([]),
     [replayCursor, setReplayCursor] = useState(0);
+  const [route, setRoute] = useState(() =>
+    window.location.pathname.startsWith("/panel") ? "panel" : "landing",
+  );
   const [admin, setAdmin] = useState(false),
     [token, setToken] = useState(() => {
       try {
@@ -1893,13 +1909,19 @@ export default function App() {
           : "overview",
       );
     };
+    const onRoute = () =>
+      setRoute(
+        window.location.pathname.startsWith("/panel") ? "panel" : "landing",
+      );
     window.addEventListener("hashchange", onHash);
+    window.addEventListener("popstate", onRoute);
     return () => {
       mounted.current = false;
       clearInterval(poll);
       clearInterval(clock);
       controller.current?.abort();
       window.removeEventListener("hashchange", onHash);
+      window.removeEventListener("popstate", onRoute);
     };
   }, []);
   useEffect(() => {
@@ -1919,6 +1941,11 @@ export default function App() {
     const timer = setTimeout(() => setReplayCursor((n) => n + 1), 1550);
     return () => clearTimeout(timer);
   }, [replay, replayCursor, replayEvents.length]);
+  function goTo(path) {
+    window.history.pushState({}, "", path);
+    setRoute(path.startsWith("/panel") ? "panel" : "landing");
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }
   function navigate(id) {
     setPage(id);
     window.location.hash = id;
@@ -1958,6 +1985,8 @@ export default function App() {
   const section =
     NAV.find((n) => n.id === page)?.label ||
     (page === "activity" ? "Ofisten haberler" : "Deney hakkında");
+  if (route === "landing")
+    return <Landing data={data} goToPanel={() => goTo("/panel")} />;
   return (
     <div className="app-shell">
       {mobileOpen && (
@@ -1971,7 +2000,7 @@ export default function App() {
         <button
           className="brand"
           onClick={() => navigate("overview")}
-          aria-label="MESAİ ana sayfa"
+          aria-label="MESAI ana sayfa"
         >
           <span className="brand-symbol">
             <i />
@@ -1980,7 +2009,8 @@ export default function App() {
             <i />
           </span>
           <span>
-            MESAİ<span className="brand-period">.</span>
+            MES<span className="brand-ai">AI</span>
+            <span className="brand-period">.</span>
           </span>
         </button>
         <div className="brand-subtitle">Otonom şirket laboratuvarı</div>
@@ -1989,7 +2019,7 @@ export default function App() {
             M<span>↗</span>
           </span>
           <div>
-            <strong>MESAİ Labs</strong>
+            <strong>MESAI Labs</strong>
             <span>Bağımsız girişim stüdyosu</span>
           </div>
           <ChevronRight size={14} />
@@ -2015,7 +2045,7 @@ export default function App() {
           <div className="next-shift">
             <div>
               <span className="sun-symbol">☀</span>
-              <span>BİR SONRAKİ MESAİ</span>
+              <span>BİR SONRAKİ MESAI</span>
             </div>
             <strong>
               {data?.runtime.status === "paused" ? "Beklemede" : "08.00"}
@@ -2044,6 +2074,11 @@ export default function App() {
             <span>Bu deney hakkında</span>
             <ArrowUpRight size={14} />
           </button>
+          <button className="nav-item" onClick={() => goTo("/")}>
+            <Sparkles size={18} strokeWidth={1.6} />
+            <span>Ürün sayfası</span>
+            <ArrowUpRight size={14} />
+          </button>
           <button className="founder" onClick={() => setOwnerOpen(true)}>
             <span className="founder-avatar">TS</span>
             <span>
@@ -2068,7 +2103,7 @@ export default function App() {
             >
               <Menu size={20} />
             </button>
-            <span>MESAİ Labs</span>
+            <span>MESAI Labs</span>
             <ChevronRight size={13} />
             <strong>{section}</strong>
           </div>
@@ -2222,7 +2257,7 @@ export default function App() {
           )}
           <footer className="page-footer">
             <span>
-              MESAİ <span>© 2026</span>
+              MESAI <span>© 2026</span>
             </span>
             <p>
               Karakterler ve ticari sonuçlar kurgusal. Üretilen dosyalar gerçek.
@@ -2254,7 +2289,7 @@ export default function App() {
       )}
       {officeOpen && data && (
         <Modal
-          title="MESAİ Labs, kuş bakışı"
+          title="MESAI Labs, kuş bakışı"
           eyebrow="BİR KARAKTERE TIKLA, HİKÂYESİNİ KEŞFET"
           onClose={() => setOfficeOpen(false)}
           wide
@@ -2271,6 +2306,8 @@ export default function App() {
               setAgentModal(a);
             }}
             running={replay || data.runtime.status === "running"}
+            phase={data.runtime.phase}
+            day={data.company.day}
           />
         </Modal>
       )}

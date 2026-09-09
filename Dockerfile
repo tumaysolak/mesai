@@ -12,6 +12,8 @@ COPY package*.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 COPY --from=build /app/dist ./dist
 COPY server ./server
-RUN mkdir -p /data && chown -R node:node /app /data
+# The Railway volume is mounted at /data as root at runtime, so the process stays
+# root to keep write access. The container runs one Node service and no shell tools.
+RUN mkdir -p /data
 EXPOSE 3000
 CMD ["node", "server/index.js"]
