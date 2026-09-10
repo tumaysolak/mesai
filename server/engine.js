@@ -2602,9 +2602,17 @@ export function createEngine(options = {}) {
     /^[^\s@]+@[^\s@.]+\.[^\s@]{2,}$/.test(value.trim());
   const escapeMail = (value) => escapeHtml(cleanText(value, 900));
 
+  // Subjects only: log lines must never carry subscriber addresses.
+  const labels = (chunk) => chunk.map((m) => m.subject).join(" | ");
+
   async function sendMails(messages) {
-    if (!resendKey || !messages.length)
+    if (!resendKey || !messages.length) {
+      if (!resendKey && messages.length)
+        console.error(
+          `Resend key missing; ${messages.length} mail(s) not sent [${labels(messages)}].`,
+        );
       return { sent: 0, reason: resendKey ? "empty" : "not_configured" };
+    }
     let sent = 0;
     for (let i = 0; i < messages.length; i += 100) {
       const chunk = messages.slice(i, i + 100).map((m) => ({
@@ -2624,8 +2632,18 @@ export function createEngine(options = {}) {
           body: JSON.stringify(chunk),
         });
         if (response.ok) sent += chunk.length;
-      } catch {
-        // Delivery is best effort; a failed batch never breaks a shift.
+        else {
+          const detail = await response.text().catch(() => "");
+          console.error(
+            `Resend rejected ${chunk.length} mail(s) [${labels(chunk)}]: HTTP ${response.status} ${detail.slice(0, 400)}`,
+          );
+        }
+      } catch (error) {
+        // Delivery is best effort; a failed batch never breaks a shift,
+        // but a silent failure must never be invisible either.
+        console.error(
+          `Resend request failed for ${chunk.length} mail(s) [${labels(chunk)}]: ${error?.message || error}`,
+        );
       }
     }
     return { sent };

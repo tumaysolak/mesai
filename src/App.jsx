@@ -144,7 +144,14 @@ const labelStatus = (s) =>
 const fileIcon = (type) =>
   type === "csv" ? Table2 : type === "html" ? Code2 : FileText;
 
-function Modal({ title, eyebrow, children, onClose, wide = false }) {
+function Modal({
+  title,
+  eyebrow,
+  children,
+  onClose,
+  wide = false,
+  fullscreen = false,
+}) {
   const ref = useRef(null);
   useEffect(() => {
     const previous = document.activeElement;
@@ -177,12 +184,12 @@ function Modal({ title, eyebrow, children, onClose, wide = false }) {
   }, [onClose]);
   return (
     <div
-      className="modal-scrim"
+      className={`modal-scrim ${fullscreen ? "is-full" : ""}`}
       onMouseDown={(e) => e.target === e.currentTarget && onClose()}
     >
       <section
         ref={ref}
-        className={`modal ${wide ? "modal-wide" : ""}`}
+        className={`modal ${wide ? "modal-wide" : ""} ${fullscreen ? "modal-full" : ""}`}
         role="dialog"
         aria-modal="true"
         aria-label={title}
@@ -202,6 +209,40 @@ function Modal({ title, eyebrow, children, onClose, wide = false }) {
         </div>
         {children}
       </section>
+    </div>
+  );
+}
+
+// The office keeps its own geometry; full screen only scales that drawing up,
+// so nothing inside it has to be re-measured or re-placed.
+const OFFICE_W = 930,
+  OFFICE_H = 400;
+
+function OfficeStage({ children }) {
+  const stage = useRef(null),
+    [scale, setScale] = useState(1);
+  useEffect(() => {
+    const node = stage.current;
+    if (!node || typeof ResizeObserver === "undefined") return;
+    const fit = () => {
+      const box = node.getBoundingClientRect();
+      if (!box.width || !box.height) return;
+      const room = Math.min(box.width / OFFICE_W, box.height / OFFICE_H);
+      setScale(room > 1 ? room : 1);
+    };
+    fit();
+    const observer = new ResizeObserver(fit);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+  return (
+    <div className="office-stage" ref={stage}>
+      <div
+        className="office-stage-inner"
+        style={{ transform: `scale(${scale})` }}
+      >
+        {children}
+      </div>
     </div>
   );
 }
@@ -398,6 +439,80 @@ function Office({ agents, activeId, openAgent, running = false, phase = "", day 
   );
 }
 
+// The engine writes a proposal as one long line: title, numbered steps,
+// "Gerekce", "Cekince" and the source, all in a row. The feed reads it back in
+// parts so the panel shows sentences instead of a wall of text.
+const EVENT_SOURCE = /\s*\[(OpenAI yanıtı|Kurallar motoru)\]\s*$/,
+  EVENT_SECTION = /\s+(?=(?:Gerekçe|Çekince|Kaynak|Varsayım|Gözlem):\s)/,
+  EVENT_STEP = /\s+(?=\d{1,2}\)\s)/;
+
+function readEvent(message) {
+  const text = String(message || "").trim(),
+    tag = text.match(EVENT_SOURCE),
+    source = tag ? tag[1] : "",
+    body = tag ? text.slice(0, tag.index).trim() : text;
+  if (!source && !EVENT_SECTION.test(body)) return { plain: body, source };
+  const parts = body
+    .split(EVENT_SECTION)
+    .map((part) => part.trim())
+    .filter(Boolean);
+  const head = parts.shift() || "",
+    cut = head.indexOf(": "),
+    title =
+      cut > 0 && cut <= 70 && !head.slice(0, cut).includes(". ")
+        ? head.slice(0, cut)
+        : "";
+  const blocks = [{ label: "", body: title ? head.slice(cut + 2).trim() : head }]
+    .concat(
+      parts.map((part) => {
+        const at = part.indexOf(": ");
+        return { label: part.slice(0, at), body: part.slice(at + 2).trim() };
+      }),
+    )
+    .filter((block) => block.body)
+    .map((block) => {
+      const steps = block.body
+        .split(EVENT_STEP)
+        .map((step) => step.trim())
+        .filter(Boolean);
+      return steps.length > 1
+        ? { ...block, lead: steps.shift(), steps }
+        : block;
+    });
+  return { title, blocks, source };
+}
+
+function EventText({ message, compact = false }) {
+  const read = readEvent(message);
+  if (read.plain !== undefined)
+    return (
+      <>
+        <p>{read.plain}</p>
+        {read.source && <span className="event-source">{read.source}</span>}
+      </>
+    );
+  const blocks = compact ? read.blocks.slice(0, 1) : read.blocks;
+  return (
+    <>
+      {read.title && <strong className="event-title">{read.title}</strong>}
+      {blocks.map((block, i) => (
+        <div className="event-block" key={i}>
+          {block.label && <span className="event-tag">{block.label}</span>}
+          <p>{block.lead || block.body}</p>
+          {!compact && block.steps && (
+            <ol className="event-steps">
+              {block.steps.map((step, j) => (
+                <li key={j}>{step.replace(/^\d{1,2}\)\s*/, "")}</li>
+              ))}
+            </ol>
+          )}
+        </div>
+      ))}
+      {read.source && <span className="event-source">{read.source}</span>}
+    </>
+  );
+}
+
 function EventFeed({ events, agents, compact = false }) {
   const shown = compact ? events.slice(0, 5) : events;
   return (
@@ -450,7 +565,7 @@ function EventFeed({ events, agents, compact = false }) {
                   <strong>{agent?.name?.split(" ")[0] || "MESAI"}</strong>
                   <time>{time(event.createdAt)}</time>
                 </div>
-                <p>{event.message}</p>
+                <EventText message={event.message} compact={compact} />
               </div>
             </div>
           );
@@ -746,7 +861,8 @@ function Overview({
               <button
                 className="icon-button"
                 onClick={() => setOfficeOpen(true)}
-                aria-label="Ofisi büyüt"
+                aria-label="Ofisi tam ekran izle"
+                title="Ofisi tam ekran izle"
               >
                 <Maximize2 size={16} />
               </button>
@@ -2483,20 +2599,25 @@ export default function App() {
           eyebrow="BİR KARAKTERE TIKLA, HİKÂYESİNİ KEŞFET"
           onClose={() => setOfficeOpen(false)}
           wide
+          fullscreen
         >
-          <Office
-            agents={data.agents}
-            activeId={
-              data.runtime.status === "running" ? shownEvents[0]?.agentId : null
-            }
-            openAgent={(a) => {
-              setOfficeOpen(false);
-              setAgentModal(a);
-            }}
-            running={data.runtime.status === "running"}
-            phase={data.runtime.phase}
-            day={data.company.day}
-          />
+          <OfficeStage>
+            <Office
+              agents={data.agents}
+              activeId={
+                data.runtime.status === "running"
+                  ? shownEvents[0]?.agentId
+                  : null
+              }
+              openAgent={(a) => {
+                setOfficeOpen(false);
+                setAgentModal(a);
+              }}
+              running={data.runtime.status === "running"}
+              phase={data.runtime.phase}
+              day={data.company.day}
+            />
+          </OfficeStage>
         </Modal>
       )}
       {ownerOpen && data && (

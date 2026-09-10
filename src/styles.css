@@ -5164,3 +5164,155 @@ a.lp-file:hover {
   font-size: 12px;
   color: var(--green);
 }
+
+/* The office, full screen: the same drawing, scaled to the room the screen has. */
+.modal-scrim.is-full {
+  padding: 0;
+}
+.modal-full {
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  max-height: 100%;
+  border-radius: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 22px clamp(16px, 3vw, 44px) clamp(18px, 2.5vw, 34px);
+}
+.modal-full .modal-header {
+  margin-bottom: 18px;
+}
+.office-stage {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.office-stage-inner {
+  width: min(930px, 100%);
+  height: 400px;
+  flex: none;
+  transform-origin: center center;
+}
+.office-stage-inner .office {
+  height: 100%;
+  margin: 0;
+}
+
+/* Marketing panels: the copy had no room to breathe and the empty states sat
+   flush against the panel border. */
+.marketing .panel-heading {
+  align-items: flex-start;
+  gap: 22px;
+}
+.marketing .panel-heading p {
+  font-size: 11px;
+  line-height: 1.75;
+  max-width: 62ch;
+  margin-top: 8px;
+}
+.marketing .panel-heading > span.muted {
+  flex: none;
+  white-space: nowrap;
+  padding-top: 5px;
+}
+.marketing .visitor-note {
+  margin: 0;
+  padding: 2px 22px 22px;
+  font-size: 12px;
+  line-height: 1.8;
+  max-width: 68ch;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.marketing .visitor-note svg {
+  flex: none;
+  margin-top: 3px;
+}
+@media (max-width: 1250px) {
+  .marketing .site-list,
+  .marketing .post-list,
+  .marketing .visitor-note {
+    padding-left: 17px;
+    padding-right: 17px;
+  }
+}
+@media (max-width: 760px) {
+  .marketing .panel-heading {
+    flex-direction: column;
+    gap: 9px;
+  }
+  .marketing .panel-heading > span.muted {
+    padding-top: 0;
+  }
+}
+
+/* One long engine line, laid out as a title, its steps and its caveats. */
+.event-title {
+  display: block;
+  margin-top: 5px;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.5;
+  color: #4b5a45;
+  overflow-wrap: anywhere;
+}
+.event-block + .event-block {
+  margin-top: 7px;
+}
+.event-tag {
+  display: inline-block;
+  margin-bottom: 2px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #eef1e6;
+  color: #77856b;
+  font-size: 7px;
+  font-weight: 800;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+}
+.event-steps {
+  margin: 5px 0 0;
+  padding-left: 15px;
+  display: grid;
+  gap: 5px;
+}
+.event-steps li {
+  font-size: 9px;
+  line-height: 1.75;
+  color: #88937d;
+  overflow-wrap: anywhere;
+}
+.event-source {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 3px 9px;
+  border: 1px solid #dbe2ce;
+  border-radius: 999px;
+  color: #6f8a5c;
+  font-size: 7px;
+  font-weight: 800;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+}
+.event-feed-compact .event-title {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.event-feed-compact .event-source {
+  margin-top: 6px;
+}
+@media (min-width: 761px) {
+  .event-title {
+    font-size: 12px;
+  }
+  .event-steps li {
+    font-size: 11px;
+  }
+}
