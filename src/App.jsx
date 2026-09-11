@@ -1016,6 +1016,7 @@ function Overview({
           />
         )}
       </section>
+      <Scorecard board={data?.scoreboard} />
       <div className="experiment-note">
         <span className="note-star">✳</span>
         <p>
@@ -1028,6 +1029,119 @@ function Overview({
         </button>
       </div>
     </>
+  );
+}
+
+// Trend, not total: the first shifts and the most recent ones, side by side.
+function conversion(rows) {
+  const reached = rows.reduce((n, r) => n + (r.reached || 0), 0);
+  const customers = rows.reduce((n, r) => n + (r.customers || 0), 0);
+  return reached ? (customers / reached) * 100 : null;
+}
+
+function Scorecard({ board }) {
+  const shifts = board?.shifts || 0,
+    priced = board?.pricedDays || 0,
+    hits = board?.priceHits || 0,
+    wins = board?.wins || 0,
+    history = board?.history || [];
+  const span = Math.min(5, Math.floor(history.length / 2));
+  const recent = span ? conversion(history.slice(0, span)) : null;
+  const early = span ? conversion(history.slice(-span)) : null;
+  const pct = (n, d) => (d ? Math.round((n / d) * 100) : 0);
+  return (
+    <section className="panel scorecard">
+      <div className="panel-heading">
+        <div>
+          <h2>Ekip öğreniyor mu?</h2>
+          <p>
+            Pazar modeli aynı tohumla tekrar çalıştırılabiliyor, bu yüzden
+            seçilmeyen iki fiyatın o gün ne getireceği de biliniyor. Karne bu
+            karşılaştırmadan çıkıyor; iyi görünmek için değil, yanılmayı
+            görünür kılmak için duruyor.
+          </p>
+        </div>
+        <span className="muted">{shifts} mesai</span>
+      </div>
+      {!priced ? (
+        <p className="visitor-note">
+          Karne, fiyat kararı alınan ilk mesai kapandığında açılacak.
+        </p>
+      ) : (
+        <>
+          <div className="score-grid">
+            <div>
+              <span className="score-label">Fiyat isabeti</span>
+              <strong>
+                {hits}/{priced}
+                <small>%{pct(hits, priced)}</small>
+              </strong>
+              <p>
+                Selin, o gün en çok geliri getirecek fiyatı {priced} karardan{" "}
+                {hits} kezinde seçti.
+              </p>
+            </div>
+            <div>
+              <span className="score-label">Kaçırılan gelir</span>
+              <strong>
+                {money(board?.missedRevenue || 0)}
+              </strong>
+              <p>
+                Daha iyi fiyat seçilseydi aynı günlerde ek olarak bu kadar
+                gelir oluşacaktı.
+              </p>
+            </div>
+            <div>
+              <span className="score-label">Deney başarısı</span>
+              <strong>
+                {wins}/{shifts}
+                <small>%{pct(wins, shifts)}</small>
+              </strong>
+              <p>Pazar testinden en az bir müşteriyle çıkılan mesai sayısı.</p>
+            </div>
+            <div>
+              <span className="score-label">Dönüşüm</span>
+              <strong>
+                {recent === null ? "—" : `%${recent.toFixed(1)}`}
+                {early !== null && recent !== null && (
+                  <small>
+                    ilk {span} mesai %{early.toFixed(1)}
+                  </small>
+                )}
+              </strong>
+              <p>
+                {early === null || recent === null
+                  ? "Karşılaştırma için en az iki mesai daha gerekiyor."
+                  : recent > early
+                    ? "Son mesailer ilk mesailerden daha iyi dönüştürüyor."
+                    : recent < early
+                      ? "Son mesailer ilk mesailerden daha kötü dönüştürüyor."
+                      : "Dönüşümde anlamlı bir değişim yok."}
+              </p>
+            </div>
+          </div>
+          <ol className="score-days">
+            {history.slice(0, 12).map((row) => (
+              <li
+                key={row.day}
+                className={
+                  row.hit === null ? "" : row.hit ? "score-hit" : "score-miss"
+                }
+                title={
+                  row.hit === null
+                    ? `${row.day}. mesai · fiyat kararı yok`
+                    : row.hit
+                      ? `${row.day}. mesai · ${row.chosen} en iyi seçimdi`
+                      : `${row.day}. mesai · ${row.chosen} seçildi, ${row.best} daha iyiydi (${row.gap} TL)`
+                }
+              >
+                <span>{row.day}</span>
+              </li>
+            ))}
+          </ol>
+        </>
+      )}
+    </section>
   );
 }
 

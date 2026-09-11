@@ -5316,3 +5316,107 @@ a.lp-file:hover {
     font-size: 11px;
   }
 }
+
+/* The scorecard exists to make a wrong call visible, so it is plain on purpose. */
+.scorecard .panel-heading p {
+  font-size: 11px;
+  line-height: 1.75;
+  max-width: 68ch;
+  margin-top: 8px;
+}
+.scorecard .visitor-note {
+  margin: 0;
+  padding: 0 22px 22px;
+  font-size: 12px;
+}
+.score-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  padding: 0 22px 4px;
+}
+.score-grid > div {
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  padding: 15px 16px;
+  background: #fffefa;
+}
+.score-label {
+  display: block;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 1.3px;
+  text-transform: uppercase;
+  color: #8d977f;
+}
+.score-grid strong {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 7px;
+  font-size: 24px;
+  line-height: 1.1;
+  color: #263f2c;
+}
+.score-grid strong small {
+  font-size: 10px;
+  font-weight: 700;
+  color: #8d977f;
+}
+.score-grid p {
+  margin-top: 8px;
+  font-size: 10px;
+  line-height: 1.7;
+  color: #88937d;
+}
+.score-days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 14px 22px 22px;
+  list-style: none;
+}
+.score-days li {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: #f4f5ee;
+  font-size: 10px;
+  font-weight: 800;
+  color: #8d977f;
+  cursor: default;
+}
+.score-days li.score-hit {
+  background: #e4efd9;
+  border-color: #c3d9b2;
+  color: #41632f;
+}
+.score-days li.score-miss {
+  background: #f6e2dc;
+  border-color: #e2bfb4;
+  color: #a5523f;
+}
+@media (max-width: 1250px) {
+  .score-grid {
+    grid-template-columns: repeat(2, 1fr);
+    padding-left: 17px;
+    padding-right: 17px;
+  }
+  .score-days {
+    padding-left: 17px;
+    padding-right: 17px;
+  }
+  .scorecard .visitor-note {
+    padding-left: 17px;
+    padding-right: 17px;
+  }
+}
+@media (max-width: 620px) {
+  .score-grid {
+    grid-template-columns: 1fr;
+  }
+}

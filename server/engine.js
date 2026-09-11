@@ -234,6 +234,39 @@ export function choosePrice({
   return { scenarios, chosen, reason };
 }
 
+// Was the price the CFO defended actually the best one on the table? The market
+// model is deterministic, so the two roads not taken can be driven with the very
+// same seed. This is the one honest way to ask whether the team is learning.
+export function scorePricing(input) {
+  const { scenarios, chosenId } = input;
+  if (!Array.isArray(scenarios) || !scenarios.length) return null;
+  const trials = scenarios.map((option) => {
+    const run = simulateMarket({
+      ...input,
+      price: option.price,
+      scenario: option.id,
+    });
+    return {
+      id: option.id,
+      label: option.label,
+      price: option.price,
+      customers: run.customers,
+      revenue: run.revenue,
+    };
+  });
+  const best = trials.reduce((a, b) => (b.revenue > a.revenue ? b : a));
+  const picked = trials.find((t) => t.id === chosenId) || trials[0];
+  return {
+    trials,
+    best: best.id,
+    bestLabel: best.label,
+    chosen: picked.id,
+    chosenLabel: picked.label,
+    hit: picked.revenue >= best.revenue,
+    gap: Math.max(0, Math.round(best.revenue - picked.revenue)),
+  };
+}
+
 // "Kadıköy'de", "Torbalı'da", "Pendik'te" — the suffix follows the last vowel.
 function atPlace(name) {
   const text = String(name || "");
@@ -1806,6 +1839,26 @@ export function createEngine(options = {}) {
               scenario: context.pricing?.chosen?.id,
             });
         context.result = result;
+        try {
+          context.priceAudit =
+            context.pricing && !context.researchOnly
+              ? scorePricing({
+                  strategy: context.strategy,
+                  budget: context.budget,
+                  day: context.day,
+                  reputation: current.company.reputation,
+                  seed: context.id,
+                  learning: current.learning[context.strategy.id],
+                  condition: context.condition || conditionFor(runDate),
+                  morale: current.company.morale,
+                  scenarios: context.pricing.scenarios,
+                  chosenId: context.pricing.chosen.id,
+                })
+              : null;
+        } catch (error) {
+          console.error(`Price audit failed on day ${context.day}: ${error.message}`);
+          context.priceAudit = null;
+        }
         if (result.buyers?.length)
           event(
             context,
@@ -2686,6 +2739,42 @@ export function createEngine(options = {}) {
     const decision = (current.decisions || []).find(
       (d) => d.day === context.day,
     );
+    const board = (current.scoreboard ||= {
+      shifts: 0,
+      wins: 0,
+      pricedDays: 0,
+      priceHits: 0,
+      missedRevenue: 0,
+      reached: 0,
+      interested: 0,
+      customers: 0,
+      history: [],
+    });
+    const audit = context.priceAudit || null;
+    const outcome = context.result || {};
+    board.shifts += 1;
+    if (outcome.success) board.wins += 1;
+    board.reached += outcome.reached || 0;
+    board.interested += outcome.interested || 0;
+    board.customers += outcome.customers || 0;
+    if (audit) {
+      board.pricedDays += 1;
+      if (audit.hit) board.priceHits += 1;
+      board.missedRevenue = Math.round(board.missedRevenue + audit.gap);
+    }
+    board.history.unshift({
+      day: context.day,
+      hit: audit ? audit.hit : null,
+      gap: audit ? audit.gap : 0,
+      chosen: audit ? audit.chosenLabel : context.pricing?.chosen?.label || "",
+      best: audit ? audit.bestLabel : "",
+      price: context.price || 0,
+      reached: outcome.reached || 0,
+      interested: outcome.interested || 0,
+      customers: outcome.customers || 0,
+      success: Boolean(outcome.success),
+    });
+    board.history = board.history.slice(0, 40);
     const summary = {
       work: context.strategy?.title || entry.work || "",
       condition: entry.condition || current.company.condition,
@@ -2709,6 +2798,17 @@ export function createEngine(options = {}) {
             total: (decision.votes || []).length,
           }
         : null,
+      pricing: context.pricing
+        ? {
+            chosen: context.pricing.chosen.label,
+            price: context.pricing.chosen.price,
+            reason: context.pricing.reason,
+          }
+        : null,
+      score: audit,
+      reached: outcome.reached ?? 0,
+      interested: outcome.interested ?? 0,
+      buyers: (outcome.buyers || []).map((b) => b.label),
       artifacts: (current.artifacts || [])
         .filter((a) => a.day === context.day)
         .map((a) => ({ id: a.id, title: a.title, type: a.type })),

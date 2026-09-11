@@ -15,6 +15,7 @@ import {
   describeCustomers,
   validateNewStrategy,
   normalizeBuyers,
+  scorePricing,
   nextHire,
   payrollOf,
   migrate,
@@ -1198,4 +1199,46 @@ test("a business line the team invents brings its own buyers", () => {
   });
   assert.equal(bare.buyers, null);
   assert.ok(describeCustomers({ strategy: bare, count: 1, seed: "x" }).length === 1);
+});
+
+test("the scorecard scores the price the team actually chose", () => {
+  const strategy = STRATEGIES[0];
+  const scenarios = priceScenarios(strategy);
+  const inputs = {
+    strategy,
+    budget: strategy.cost,
+    day: 4,
+    reputation: 50,
+    morale: 78,
+    learning: {},
+    scenarios,
+  };
+  let hits = 0,
+    misses = 0;
+  for (let i = 0; i < 120; i++) {
+    const seed = `score-${i}`;
+    const chosenId = scenarios[i % 3].id;
+    const audit = scorePricing({ ...inputs, seed, chosenId });
+    assert.equal(audit.trials.length, 3);
+    assert.equal(audit.chosen, chosenId);
+    // The audit must agree with a plain run of the same seed and price.
+    const direct = simulateMarket({
+      ...inputs,
+      seed,
+      price: scenarios[i % 3].price,
+      scenario: chosenId,
+    });
+    const trial = audit.trials.find((t) => t.id === chosenId);
+    assert.equal(trial.revenue, direct.revenue);
+    assert.equal(trial.customers, direct.customers);
+    // A hit means nothing was left on the table; a miss quantifies what was.
+    const bestRevenue = Math.max(...audit.trials.map((t) => t.revenue));
+    assert.equal(audit.hit, trial.revenue >= bestRevenue);
+    assert.equal(audit.gap, audit.hit ? 0 : bestRevenue - trial.revenue);
+    audit.hit ? hits++ : misses++;
+  }
+  // Over many seeds the CFO is neither always right nor always wrong.
+  assert.ok(hits > 0);
+  assert.ok(misses > 0);
+  assert.equal(scorePricing({ ...inputs, seed: "x", scenarios: [] }), null);
 });
