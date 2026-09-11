@@ -12,6 +12,9 @@ import {
   simulateMarket,
   priceScenarios,
   choosePrice,
+  describeCustomers,
+  validateNewStrategy,
+  normalizeBuyers,
   nextHire,
   payrollOf,
   migrate,
@@ -1146,4 +1149,53 @@ test("the team prices the pilot, and the market answers the price", () => {
       assert.equal(buyer.price, scenarios[0].price);
     }
   }
+});
+
+test("a business line the team invents brings its own buyers", () => {
+  const invented = validateNewStrategy({
+    title: "Zincir kuru temizlemede buhar kaçağı",
+    segment: "Şubeli kuru temizlemeciler",
+    problem: "Buhar hattındaki kaçakların faturaya sessizce yansıması",
+    solution: "Şube başına kaçak taraması ve haftalık tüketim çizelgesi",
+    hypothesis: "Şube müdürü ölçülebilir bir tarama için görüşme kabul eder.",
+    field: "Buhar hattı verimliliği",
+    price: 3000,
+    cost: 1000,
+    buyers: {
+      kinds: ["Kuru Temizleme Şubesi", "otel çamaşırhanesi", "hastane çamaşırhanesi", "tekstil yıkama tesisi"],
+      roles: ["şube müdürü", "teknik sorumlu"],
+      sizes: [6, 60],
+    },
+  });
+  assert.ok(invented);
+  // Normalised: lower-cased, de-duplicated, bounded.
+  assert.equal(invented.buyers.kinds[0], "kuru temizleme şubesi");
+  assert.equal(invented.buyers.sizes[0], 6);
+  assert.ok(invented.buyers.sizes[1] > invented.buyers.sizes[0]);
+
+  const buyers = describeCustomers({
+    strategy: invented,
+    count: 2,
+    seed: "invented-line",
+    price: 3000,
+  });
+  assert.equal(buyers.length, 2);
+  for (const buyer of buyers) {
+    assert.ok(invented.buyers.kinds.includes(buyer.kind));
+    assert.ok(invented.buyers.roles.includes(buyer.role));
+    assert.ok(buyer.size >= 6 && buyer.size <= 60);
+  }
+
+  // Too thin a list is refused, and the line simply falls back to the pool.
+  assert.equal(normalizeBuyers({ kinds: ["a"], roles: [] }), null);
+  assert.equal(normalizeBuyers(null), null);
+  const bare = validateNewStrategy({
+    title: "Alıcısı tarif edilmemiş fikir",
+    segment: "Belirsiz",
+    problem: "Tarif edilmemiş bir sorun",
+    solution: "Küçük kapsamlı bir teslim",
+    hypothesis: "Denenebilir bir varsayım",
+  });
+  assert.equal(bare.buyers, null);
+  assert.ok(describeCustomers({ strategy: bare, count: 1, seed: "x" }).length === 1);
 });

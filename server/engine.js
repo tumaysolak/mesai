@@ -253,7 +253,7 @@ export function describeCustomers({
 }) {
   if (!count) return [];
   const random = rng(`${seed}:buyers`);
-  const pool = BUYERS[strategy?.category] || BUYER_FALLBACK;
+  const pool = strategy?.buyers || BUYERS[strategy?.category] || BUYER_FALLBACK;
   const kinds = pool.kinds || BUYER_FALLBACK.kinds;
   const roles = pool.roles || BUYER_FALLBACK.roles;
   const [low, high] = pool.sizes || BUYER_FALLBACK.sizes;
@@ -586,6 +586,30 @@ const cleanText = (s, max = 3000) =>
   typeof s === "string" ? s.replace(/\u0000/g, "").slice(0, max) : "";
 const csvCell = (s) => '"' + String(s).replaceAll('"', '""') + '"';
 
+// An invented business line has to bring its own buyers, otherwise its
+// customers fall back to the generic pool and every one of them reads alike.
+export function normalizeBuyers(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+  const list = (input, cap) =>
+    Array.isArray(input)
+      ? [
+          ...new Set(
+            input
+              .filter((item) => typeof item === "string")
+              .map((item) => cleanText(item, 60).trim().toLocaleLowerCase("tr"))
+              .filter((item) => item.length >= 3),
+          ),
+        ].slice(0, cap)
+      : [];
+  const kinds = list(value.kinds, 8);
+  const roles = list(value.roles, 6);
+  if (kinds.length < 3 || roles.length < 2) return null;
+  const pair = Array.isArray(value.sizes) ? value.sizes.map(Number) : [];
+  const low = clamp(Math.round(pair[0] || 15), 3, 400);
+  const high = clamp(Math.round(pair[1] || low * 6), low + 5, 900);
+  return { kinds, roles, sizes: [low, high] };
+}
+
 export function validateNewStrategy(value) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
   const fields = ["title", "segment", "problem", "solution", "hypothesis"];
@@ -610,6 +634,7 @@ export function validateNewStrategy(value) {
     origin: "ai",
   };
   strategy.category = strategy.id;
+  strategy.buyers = normalizeBuyers(value.buyers);
   for (const field of [
     "validation",
     "technical",
@@ -1418,7 +1443,7 @@ export function createEngine(options = {}) {
             await ai(
               context,
               "commission",
-              `${baseSystem} Kurucudan gelen iş tanımını, ekibin bu mesaide çalışacağı somut bir işe çevir. JSON: {"title":"kısa iş başlığı","segment":"hedef kullanıcı","problem":"somut sorun","solution":"bu mesaide üretilebilecek düşük kapsamlı teslim","hypothesis":"test edilebilir varsayım","cost":300..3000,"price":900..12000,"base":0.25..0.65}. Kurucunun tanımının dışına çıkma.`,
+              `${baseSystem} Kurucudan gelen iş tanımını, ekibin bu mesaide çalışacağı somut bir işe çevir. JSON: {"title":"kısa iş başlığı","segment":"hedef kullanıcı","problem":"somut sorun","solution":"bu mesaide üretilebilecek düşük kapsamlı teslim","hypothesis":"test edilebilir varsayım","cost":300..3000,"price":900..12000,"base":0.25..0.65,"buyers":{"kinds":["4-5 farklı işletme türü, küçük harf"],"roles":["2-4 karar veren rol"],"sizes":[en az çalışan, en çok çalışan]}}. buyers alanı bu işi gerçekten satın alabilecek işletme türlerini ve karar veren rolleri anlatsın. Kurucunun tanımının dışına çıkma.`,
               { brief: context.brief, day: context.day },
             ),
           );
@@ -1457,7 +1482,7 @@ export function createEngine(options = {}) {
               ? await ai(
                   context,
                   `council-${a.id}`,
-                  `${baseSystem} ${focusLine()} Sen ${a.name}, ${a.role}. Kişisel geçmişin: ${a.backstory} Motivasyonun: ${a.motivation} Kaygın: ${a.fear} Yalnız kendi görüşünü üret. ${commissioned ? `Bu mesaide kurucudan gelen iş var: "${commissioned.title}". Ne yapılacağını tartışma, kendi rolünden nasıl yapılacağını söyle ve strategyId olarak "${commissioned.id}" gönder.` : "Yeni bir ürün fikri keşfedebilirsin; uygun yeni fikir varsa önceden verilen seçeneklerle sınırlı kalma ve gerekirse faaliyet alanının dışına çık."} JSON biçimi: {"strategyId":"var olan seçenek id, yeni fikirse boş string","newStrategy":null veya {"title":"yeni özgün başlık","segment":"hedef müşteri","problem":"somut sorun","solution":"düşük kapsamlı teslim","hypothesis":"test edilebilir talep hipotezi","field":"kısa faaliyet alanı adı","cost":300..3000,"price":900..12000,"base":0.25..0.65},"rationale":"özgül gerekçe ve bellekteki dersin etkisi","risk":"özgül çekince","priority":1..10,"proposal":"bu güne özel somut aksiyon"}. base yalnız sentetik pazar modelinin belirsiz başlangıç varsayımıdır.`,
+                  `${baseSystem} ${focusLine()} Sen ${a.name}, ${a.role}. Kişisel geçmişin: ${a.backstory} Motivasyonun: ${a.motivation} Kaygın: ${a.fear} Yalnız kendi görüşünü üret. ${commissioned ? `Bu mesaide kurucudan gelen iş var: "${commissioned.title}". Ne yapılacağını tartışma, kendi rolünden nasıl yapılacağını söyle ve strategyId olarak "${commissioned.id}" gönder.` : "Yeni bir ürün fikri keşfedebilirsin; uygun yeni fikir varsa önceden verilen seçeneklerle sınırlı kalma ve gerekirse faaliyet alanının dışına çık."} JSON biçimi: {"strategyId":"var olan seçenek id, yeni fikirse boş string","newStrategy":null veya {"title":"yeni özgün başlık","segment":"hedef müşteri","problem":"somut sorun","solution":"düşük kapsamlı teslim","hypothesis":"test edilebilir talep hipotezi","field":"kısa faaliyet alanı adı","cost":300..3000,"price":900..12000,"base":0.25..0.65,"buyers":{"kinds":["4-5 farklı işletme türü, küçük harf"],"roles":["2-4 karar veren rol"],"sizes":[en az çalışan, en çok çalışan]}},"rationale":"özgül gerekçe ve bellekteki dersin etkisi","risk":"özgül çekince","priority":1..10,"proposal":"bu güne özel somut aksiyon"}. base yalnız sentetik pazar modelinin belirsiz başlangıç varsayımıdır.`,
                   {
                     day: context.day,
                     company: current.company,
