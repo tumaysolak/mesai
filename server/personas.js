@@ -1,6 +1,8 @@
 export const PERSONAS = [
   {
     id: "deniz",
+    look: 0,
+    feminine: false,
     name: "Deniz Aral",
     role: "CEO",
     department: "Strateji",
@@ -20,6 +22,8 @@ export const PERSONAS = [
   },
   {
     id: "ege",
+    look: 3,
+    feminine: false,
     name: "Ege Tan",
     role: "CTO",
     department: "Teknoloji",
@@ -39,6 +43,8 @@ export const PERSONAS = [
   },
   {
     id: "selin",
+    look: 6,
+    feminine: true,
     name: "Selin Acar",
     role: "CFO",
     department: "Finans",
@@ -58,6 +64,8 @@ export const PERSONAS = [
   },
   {
     id: "mert",
+    look: 5,
+    feminine: false,
     name: "Mert Yalın",
     role: "COO",
     department: "Operasyon",
@@ -77,6 +85,8 @@ export const PERSONAS = [
   },
   {
     id: "ada",
+    look: 1,
+    feminine: true,
     name: "Ada Keskin",
     role: "Ürün Lideri",
     department: "Ürün",
@@ -96,6 +106,8 @@ export const PERSONAS = [
   },
   {
     id: "can",
+    look: 2,
+    feminine: false,
     name: "Can Bora",
     role: "Büyüme Lideri",
     department: "Büyüme",
@@ -115,6 +127,8 @@ export const PERSONAS = [
   },
   {
     id: "lale",
+    look: 7,
+    feminine: true,
     name: "Lale Sönmez",
     role: "Tasarım Lideri",
     department: "Tasarım",
@@ -134,6 +148,8 @@ export const PERSONAS = [
   },
   {
     id: "baris",
+    look: 4,
+    feminine: false,
     name: "Barış Erdem",
     role: "Araştırmacı",
     department: "Araştırma",
@@ -295,6 +311,8 @@ export const STRATEGIES = [
 export const CANDIDATES = [
   {
     id: "zeynep",
+    look: 4,
+    feminine: true,
     name: "Zeynep Kaya",
     role: "Veri Bilimci",
     department: "Veri",
@@ -315,6 +333,8 @@ export const CANDIDATES = [
   },
   {
     id: "kaan",
+    look: 6,
+    feminine: false,
     name: "Kaan Demir",
     role: "Saha Mühendisi",
     department: "Saha",
@@ -335,6 +355,8 @@ export const CANDIDATES = [
   },
   {
     id: "elif",
+    look: 3,
+    feminine: true,
     name: "Elif Çetin",
     role: "Müşteri Başarısı",
     department: "Müşteri",
@@ -355,6 +377,8 @@ export const CANDIDATES = [
   },
   {
     id: "burak",
+    look: 7,
+    feminine: false,
     name: "Burak Tuncer",
     role: "Satış Lideri",
     department: "Satış",
@@ -375,6 +399,8 @@ export const CANDIDATES = [
   },
   {
     id: "nil",
+    look: 0,
+    feminine: true,
     name: "Nil Aydın",
     role: "İçerik Editörü",
     department: "İletişim",
@@ -395,6 +421,8 @@ export const CANDIDATES = [
   },
   {
     id: "onur",
+    look: 1,
+    feminine: false,
     name: "Onur Devrim",
     role: "ML Mühendisi",
     department: "Teknoloji",
@@ -415,6 +443,8 @@ export const CANDIDATES = [
   },
   {
     id: "derya",
+    look: 5,
+    feminine: true,
     name: "Derya Kılıç",
     role: "Finansal Analist",
     department: "Finans",
@@ -435,6 +465,8 @@ export const CANDIDATES = [
   },
   {
     id: "tuna",
+    look: 2,
+    feminine: false,
     name: "Tuna Aksoy",
     role: "Topluluk Sorumlusu",
     department: "Büyüme",

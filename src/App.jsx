@@ -284,7 +284,9 @@ const ZONES = {
   home: { left: -12, right: -7, top: 150, bottom: 205 },
 };
 export function zoneFor(phase = "", status = "", index = 0) {
-  if (status === "offline") return "home";
+  // A finished or not-yet-started shift means the desk is empty: resting
+  // people have gone home, they are not still sitting in the office.
+  if (status === "offline" || status === "resting") return "home";
   if (/toplantı/.test(phase)) return "meeting";
   if (/Fikirler/.test(phase)) return index % 4 === 0 ? "meeting" : "desk";
   if (/kurulu/.test(phase)) return "meeting";
@@ -2454,11 +2456,6 @@ export default function App() {
               Nasıl çalışıyor? <ArrowUpRight size={12} />
             </button>
           </div>
-          {data?.runtime.error && (
-            <div className="runtime-warning" role="status">
-              {data.runtime.error}
-            </div>
-          )}
           {error && (
             <div className="connection-error" role="alert">
               <Info size={17} />

@@ -403,6 +403,9 @@ export function migrate(state) {
         typeof agent.founder === "boolean"
           ? agent.founder
           : PERSONAS.some((p) => p.id === agent.id),
+      look: Number.isInteger(agent.look) ? agent.look : source.look,
+      feminine:
+        typeof agent.feminine === "boolean" ? agent.feminine : source.feminine,
       hiredDay: Number(agent.hiredDay) || 0,
       memories: agent.memories || [],
     };
@@ -1059,6 +1062,11 @@ export function createEngine(options = {}) {
         : error.message === "Yanıt şeması geçersiz"
           ? " (yanıt şeması geçersiz)"
           : "";
+      // The panel no longer shows this to watchers, so the log is the only
+      // place left to learn which step fell back and why.
+      console.error(
+        `AI fallback [${purpose}] ${model}: ${error.name} ${error.message}`,
+      );
       context.fallbackReasons.add(
         error.name === "AbortError"
           ? "Yapay zekâ yanıt süresi aşıldı; kurallar motoru devraldı."
