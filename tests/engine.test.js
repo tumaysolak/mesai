@@ -10,6 +10,8 @@ import {
   createEngine,
   scoreStrategy,
   simulateMarket,
+  priceScenarios,
+  choosePrice,
   nextHire,
   payrollOf,
   migrate,
@@ -1082,4 +1084,66 @@ test("product slugs are url safe and the page carries the company's own words", 
   assert.match(html, /Tek cümlelik anlatım/);
   assert.match(html, /5\. mesaide/);
   assert.doesNotMatch(html, /<script/i);
+});
+
+test("the team prices the pilot, and the market answers the price", () => {
+  const strategy = STRATEGIES[0];
+  const scenarios = priceScenarios(strategy);
+  assert.equal(scenarios.length, 3);
+  assert.ok(scenarios[0].price < scenarios[1].price);
+  assert.ok(scenarios[1].price < scenarios[2].price);
+  // Cheaper converts better, dearer converts worse.
+  assert.ok(scenarios[0].factor > scenarios[1].factor);
+  assert.ok(scenarios[1].factor > scenarios[2].factor);
+  assert.equal(scenarios[1].factor, 1);
+
+  const rich = { strategy, cash: 25000, payroll: 1000, day: 1 };
+  assert.equal(choosePrice(rich).chosen.id, "referans");
+  assert.equal(choosePrice({ ...rich, cash: 2000 }).chosen.id, "temkinli");
+  assert.equal(
+    choosePrice({ ...rich, learning: { failures: 2, successes: 0 }, day: 5 })
+      .chosen.id,
+    "temkinli",
+  );
+  assert.equal(
+    choosePrice({ ...rich, learning: { failures: 0, successes: 2 }, day: 5 })
+      .chosen.id,
+    "iddiali",
+  );
+
+  // A lower price wins more pilots than a higher one over the same seeds.
+  const run = (price) =>
+    Array.from({ length: 300 }, (_, i) =>
+      simulateMarket({
+        strategy,
+        budget: strategy.cost,
+        day: 3,
+        seed: `price-${i}`,
+        price,
+      }),
+    );
+  const cheap = run(scenarios[0].price).filter((r) => r.success).length;
+  const dear = run(scenarios[2].price).filter((r) => r.success).length;
+  assert.ok(cheap > dear);
+
+  for (const result of run(scenarios[0].price)) {
+    assert.equal(result.price, scenarios[0].price);
+    assert.equal(result.revenue, result.customers * scenarios[0].price);
+    assert.equal(result.buyers.length, result.customers);
+    // Nobody buys twice from the same district or in the same trade.
+    assert.equal(
+      new Set(result.buyers.map((b) => b.place)).size,
+      result.buyers.length,
+    );
+    assert.equal(
+      new Set(result.buyers.map((b) => b.kind)).size,
+      result.buyers.length,
+    );
+    for (const buyer of result.buyers) {
+      assert.ok(buyer.size >= 20 && buyer.size <= 150);
+      assert.ok(buyer.role.length > 3);
+      assert.ok(buyer.label.includes(String(buyer.size)));
+      assert.equal(buyer.price, scenarios[0].price);
+    }
+  }
 });

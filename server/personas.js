@@ -486,3 +486,117 @@ export const CANDIDATES = [
     pitch: "Kullanıcı geri bildirimi düzenli toplanmıyor.",
   },
 ];
+
+// A customer is a sentence, not a counter. These pools give every simulated
+// buyer a place, a size, a trade and a person who signed off.
+export const BUYERS = {
+  office: {
+    kinds: [
+      "muhasebe ofisi",
+      "mimarlık bürosu",
+      "sigorta acentesi",
+      "yazılım ekibi",
+      "çağrı merkezi",
+      "hukuk bürosu",
+    ],
+    roles: [
+      "ofis müdürü",
+      "idari işler sorumlusu",
+      "kurucu ortak",
+      "mali işler müdürü",
+    ],
+    sizes: [20, 150],
+  },
+  air: {
+    kinds: [
+      "tekstil atölyesi",
+      "metal işleme atölyesi",
+      "plastik enjeksiyon tesisi",
+      "mobilya fabrikası",
+      "kauçuk üretim tesisi",
+    ],
+    roles: ["bakım sorumlusu", "üretim müdürü", "işletme sahibi", "teknik müdür"],
+    sizes: [15, 120],
+  },
+  cold: {
+    kinds: [
+      "semt marketi",
+      "gıda deposu",
+      "su ürünleri toptancısı",
+      "pastane zinciri",
+      "et işleme tesisi",
+    ],
+    roles: ["depo sorumlusu", "işletme sahibi", "operasyon müdürü", "şube müdürü"],
+    sizes: [8, 90],
+  },
+  solar: {
+    kinds: [
+      "çatı GES'li fabrika",
+      "lojistik deposu",
+      "otel işletmesi",
+      "tarım işletmesi",
+      "iş merkezi yönetimi",
+    ],
+    roles: [
+      "enerji sorumlusu",
+      "tesis müdürü",
+      "işletme sahibi",
+      "teknik işler müdürü",
+    ],
+    sizes: [25, 200],
+  },
+  school: {
+    kinds: [
+      "özel ilkokul",
+      "kolej kampüsü",
+      "etüt merkezi",
+      "yurt işletmesi",
+      "kreş zinciri",
+    ],
+    roles: [
+      "okul müdürü",
+      "idari koordinatör",
+      "kurucu temsilcisi",
+      "teknik işler sorumlusu",
+    ],
+    sizes: [30, 250],
+  },
+  heat: {
+    kinds: [
+      "ekmek fırını",
+      "boya kurutma tesisi",
+      "seramik atölyesi",
+      "süt işleme tesisi",
+      "döküm atölyesi",
+    ],
+    roles: ["üretim müdürü", "bakım şefi", "işletme sahibi", "proses mühendisi"],
+    sizes: [20, 160],
+  },
+};
+
+export const BUYER_FALLBACK = {
+  kinds: ["küçük işletme", "aile şirketi", "üretim atölyesi", "hizmet ofisi"],
+  roles: ["işletme sahibi", "operasyon sorumlusu", "teknik müdür"],
+  sizes: [15, 120],
+};
+
+export const BUYER_PLACES = [
+  "Kadıköy",
+  "Ümraniye",
+  "Pendik",
+  "Başakşehir",
+  "Beylikdüzü",
+  "Gebze",
+  "Çorlu",
+  "Bornova",
+  "Çiğli",
+  "Torbalı",
+  "Nilüfer",
+  "İnegöl",
+  "Çankaya",
+  "Sincan",
+  "Selçuklu",
+  "Kepez",
+  "Şehitkamil",
+  "Manavgat",
+];

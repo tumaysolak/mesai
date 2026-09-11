@@ -2,7 +2,14 @@ import { DatabaseSync } from "node:sqlite";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { randomUUID, createHash } from "node:crypto";
-import { PERSONAS, CANDIDATES, STRATEGIES } from "./personas.js";
+import {
+  PERSONAS,
+  CANDIDATES,
+  STRATEGIES,
+  BUYERS,
+  BUYER_FALLBACK,
+  BUYER_PLACES,
+} from "./personas.js";
 
 const TZ = "Europe/Istanbul";
 const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
@@ -159,6 +166,132 @@ export function scoreStrategy(strategy, state) {
     strategy.base * 3 + posterior * 5 + exploration + affordability + fatigue,
   );
 }
+// --- Price is a decision, not a constant. ---
+// Below the list price the pilot converts better, above it worse. The CFO and
+// the market read the same curve, so a forecast can actually be wrong.
+export function priceFactor(price, listPrice) {
+  const list = Number(listPrice) || Number(price) || 1;
+  const ratio = clamp(Number(price) / list, 0.4, 2.5);
+  return round(clamp(1 + (1 - ratio) * 0.6, 0.5, 1.5));
+}
+
+export function priceScenarios(strategy) {
+  const list = Math.max(300, Math.round(Number(strategy?.price) || 3000));
+  const step = (n) => Math.round((list * n) / 50) * 50;
+  return [
+    {
+      id: "temkinli",
+      label: "Temkinli",
+      price: step(0.7),
+      note: "Girişi ucuzlat, kapıyı aç, referans topla.",
+    },
+    {
+      id: "referans",
+      label: "Referans",
+      price: list,
+      note: "Kart fiyatı; ölçüm planının taşıdığı bedel.",
+    },
+    {
+      id: "iddiali",
+      label: "İddialı",
+      price: step(1.35),
+      note: "Az müşteri, yüksek bedel; kanıt talebi artar.",
+    },
+  ].map((s) => ({
+    ...s,
+    factor: priceFactor(s.price, list),
+    expected: round(priceFactor(s.price, list) * s.price),
+  }));
+}
+
+// Selin runs three scenarios and defends one: a burned line steps back, a
+// tight till buys volume, a proven line finally tests what it is worth.
+export function choosePrice({
+  strategy,
+  learning = {},
+  cash = 0,
+  payroll = 0,
+  day = 1,
+}) {
+  const scenarios = priceScenarios(strategy);
+  const successes = learning.successes || 0;
+  const failures = learning.failures || 0;
+  let pick = "referans";
+  let reason =
+    "Kart fiyatından sapmak için yeterli veri yok; bu turda referans fiyatla ölçüyorum.";
+  if (failures > successes) {
+    pick = "temkinli";
+    reason = `Bu hatta ${failures} başarısız deney var; önce dönüşümü görmek istiyorum, fiyatı indiriyorum.`;
+  } else if (cash < payroll * 6) {
+    pick = "temkinli";
+    reason =
+      "Kasa bordronun altı katının altında; bugün adet lazım, marj değil.";
+  } else if (successes >= 2 && day > 3) {
+    pick = "iddiali";
+    reason = `Bu hatta ${successes} başarılı deney birikti; fiyatın sınırını test etme zamanı.`;
+  }
+  const chosen = scenarios.find((s) => s.id === pick) || scenarios[1];
+  return { scenarios, chosen, reason };
+}
+
+// "Kadıköy'de", "Torbalı'da", "Pendik'te" — the suffix follows the last vowel.
+function atPlace(name) {
+  const text = String(name || "");
+  const vowels = [...text.toLowerCase()].filter((c) => "aeıioöuü".includes(c));
+  const last = vowels[vowels.length - 1] || "a";
+  const back = "aıou".includes(last);
+  const hard = "fstkçşhp".includes(text.slice(-1).toLowerCase());
+  return `${text}'${hard ? (back ? "ta" : "te") : back ? "da" : "de"}`;
+}
+
+export function describeCustomers({
+  strategy,
+  count = 0,
+  seed,
+  scenario = "referans",
+  price = 0,
+}) {
+  if (!count) return [];
+  const random = rng(`${seed}:buyers`);
+  const pool = BUYERS[strategy?.category] || BUYER_FALLBACK;
+  const kinds = pool.kinds || BUYER_FALLBACK.kinds;
+  const roles = pool.roles || BUYER_FALLBACK.roles;
+  const [low, high] = pool.sizes || BUYER_FALLBACK.sizes;
+  const notes = {
+    temkinli: "Fiyat düşük tutulduğu için kararı tek toplantıda verdi.",
+    referans: "Ölçüm adımlarını görünce fiyatı sorgulamadı.",
+    iddiali: "Yüksek bedeli, iki haftalık ücretsiz pilot şartıyla kabul etti.",
+  };
+  const usedKinds = new Set();
+  const usedPlaces = new Set();
+  const buyers = [];
+  for (let i = 0; i < count; i++) {
+    let kind = kinds[Math.floor(random() * kinds.length)];
+    let place = BUYER_PLACES[Math.floor(random() * BUYER_PLACES.length)];
+    for (
+      let guard = 0;
+      guard < 12 && (usedKinds.has(kind) || usedPlaces.has(place));
+      guard++
+    ) {
+      kind = kinds[Math.floor(random() * kinds.length)];
+      place = BUYER_PLACES[Math.floor(random() * BUYER_PLACES.length)];
+    }
+    usedKinds.add(kind);
+    usedPlaces.add(place);
+    const size = Math.round(low + random() * (high - low));
+    buyers.push({
+      place,
+      kind,
+      size,
+      role: roles[Math.floor(random() * roles.length)],
+      price: Math.round(price),
+      note: notes[scenario] || notes.referans,
+      label: `${atPlace(place)} ${size} kişilik ${kind}`,
+    });
+  }
+  return buyers;
+}
+
 export function simulateMarket({
   strategy,
   budget,
@@ -168,8 +301,13 @@ export function simulateMarket({
   learning = {},
   condition = CONDITIONS[0],
   morale = 78,
+  price = null,
+  scenario = "referans",
 }) {
   const random = rng(`${seed}:market`);
+  const listPrice = Math.round(Number(strategy.price) || 0);
+  const unit = Number(price) > 0 ? Math.round(Number(price)) : listPrice;
+  const factor = priceFactor(unit, listPrice);
   const demand = 0.65 + random() * 0.7;
   const attempts = learning.attempts || 0;
   const revision = clamp(
@@ -178,12 +316,13 @@ export function simulateMarket({
     0.12,
   );
   const probability = clamp(
-    strategy.base * condition.demand +
+    (strategy.base * condition.demand +
       (reputation - 50) / 300 +
       (morale - 78) / 400 +
       revision -
-      (budget < strategy.cost ? 0.15 : 0),
-    0.1,
+      (budget < strategy.cost ? 0.15 : 0)) *
+      factor,
+    0.08,
     0.86,
   );
   const spend = Math.round(budget * condition.cost);
@@ -193,8 +332,20 @@ export function simulateMarket({
     Math.round(reached * (0.06 + random() * 0.11)),
   );
   const success = random() < probability;
-  const customers = success ? 1 + Math.floor(random() * (day > 4 ? 3 : 2)) : 0;
-  const revenue = customers * strategy.price;
+  // The head count now comes out of the funnel and the price, not out of thin
+  // air: a cheaper pilot closes more of the interested pool.
+  const ceiling = day > 4 ? 3 : 2;
+  const customers = success
+    ? clamp(Math.round(interested * 0.18 * factor + random()), 1, ceiling)
+    : 0;
+  const revenue = customers * unit;
+  const buyers = describeCustomers({
+    strategy,
+    count: customers,
+    seed,
+    scenario,
+    price: unit,
+  });
   const reason = success
     ? "Değer önerisi ve düşük başlangıç eşiği, modellenen müşteri grubunda karşılık buldu."
     : random() > 0.5
@@ -205,6 +356,11 @@ export function simulateMarket({
     reached,
     interested,
     customers,
+    buyers,
+    price: unit,
+    listPrice,
+    priceFactor: factor,
+    scenario,
     revenue,
     cost: spend,
     profit: revenue - spend,
@@ -546,6 +702,17 @@ export function nextHire(state, day) {
 
 export function makeDayReport(context, state) {
   const r = context.result;
+  const pricing = context.pricing;
+  const priceBlock = pricing
+    ? `${pricing.scenarios
+        .map((s) => `- ${s.label}: ${s.price} TL — ${s.note}`)
+        .join("\n")}\n- **Seçilen:** ${pricing.chosen.label}, ${pricing.chosen.price} TL. ${pricing.reason}`
+    : `- Bu mesaide ayrı bir fiyat kararı alınmadı; kart fiyatı ${context.strategy.price} TL kullanıldı.`;
+  const buyerBlock = (r.buyers || []).length
+    ? r.buyers
+        .map((b) => `- ${b.label} — ${b.role} · ${b.price} TL · ${b.note}`)
+        .join("\n")
+    : "- Bu mesaide pilotu satın alan olmadı.";
   const payroll = context.payroll || 0;
   const retainer = context.recurring || 0;
   const net = round(r.revenue + retainer - r.cost - payroll);
@@ -555,7 +722,7 @@ export function makeDayReport(context, state) {
       "Pilot geliri",
       "gelir",
       r.revenue,
-      `${r.customers} modellenen müşteri × ${context.strategy.price} TL`,
+      `${r.customers} modellenen müşteri × ${r.price || context.strategy.price} TL`,
     ],
     [
       "Bakım geliri",
@@ -584,7 +751,7 @@ export function makeDayReport(context, state) {
       "Ne yapıldı, ne kazandırdı, ne maliyet çıkardı. Tamamı simülasyon.",
     type: "markdown",
     ownerId: "selin",
-    content: `# ${context.day}. mesai · gün sonu raporu\n\n**Durum:** Bu rapor bir otonom şirket simülasyonunun çıktısıdır. Para, müşteri ve maaşlar sentetiktir; gerçek bir ödeme veya satış yoktur.\n\n## Bugün ne yapıldı\n- Piyasa koşulu: ${(context.condition || {}).label || state.company.condition} — ${(context.condition || {}).note || state.company.conditionNote}\n- Faaliyet alanı: ${state.company.focus}\n- Seçilen iş: ${context.strategy.title}\n- Hedef grup: ${context.strategy.segment}\n${context.brief ? `- Kurucu talebi: ${context.brief}\n` : ""}- Teslim edilen dosya sayısı: 4 (bu rapor hariç)\n- Kadro: ${state.agents.length} kişi\n\n## Sonuç\n${r.reached} modellenen aday, ${r.interested} ilgi, ${r.customers} müşteri. ${r.reason}\n\n## Gün sonu tablosu\n\n| Kalem | Tür | Tutar (simülasyon TL) | Açıklama |\n|---|---|---|---|\n${table}\n\n## Ürün hattı\n${(state.products || []).length ? state.products.map((x) => `- ${x.title} — ${x.status === "active" ? `${x.customers} müşteri` : `${x.retiredDay}. günde durduruldu`}`).join("\\n") : "- Henüz kalıcı bir ürün hattı yok."}\n\n## Şirketin ilkeleri\n${(state.principles || []).length ? state.principles.map((x) => `- ${x.text}`).join("\\n") : "- Henüz yazılmış bir ilke yok."}\n\n## Nakit ve borç\n- Kasa: ${state.company.cash} TL\n- Borç: ${state.finance?.debt || 0} TL (kredi limiti ${state.finance?.creditLimit || 0} TL)\n- Bugüne kadar çekilen kredi: ${state.finance?.borrowed || 0} TL, kapatılan: ${state.finance?.repaid || 0} TL, ödenen faiz: ${state.finance?.interestPaid || 0} TL\n${(context.finance?.notes || []).length ? context.finance.notes.map((n) => `- Bugün: ${n}`).join("\\n") : "- Bugün ek finansman hareketi olmadı."}${state.finance?.crisisDays ? `\n- Nakit krizi sürüyor: ${state.finance.crisisDays}. mesai.` : ""}\n\n## Kümülatif\n- Toplam gelir: ${state.company.revenue} TL\n- Müşteri: ${state.company.customers}\n- İtibar: ${state.company.reputation}\n- Takım uyumu: ${state.company.teamwork}\n- Bordro: ${state.company.payroll} TL / mesai\n\n## Ders\n${context.lesson}\n\n## Sınır\nBu tablodaki tutarlar sentetik pazar modelinden gelir. Gerçek bir gelir tablosu, vergi hesabı veya yatırım önerisi değildir.\n`,
+    content: `# ${context.day}. mesai · gün sonu raporu\n\n**Durum:** Bu rapor bir otonom şirket simülasyonunun çıktısıdır. Para, müşteri ve maaşlar sentetiktir; gerçek bir ödeme veya satış yoktur.\n\n## Bugün ne yapıldı\n- Piyasa koşulu: ${(context.condition || {}).label || state.company.condition} — ${(context.condition || {}).note || state.company.conditionNote}\n- Faaliyet alanı: ${state.company.focus}\n- Seçilen iş: ${context.strategy.title}\n- Hedef grup: ${context.strategy.segment}\n${context.brief ? `- Kurucu talebi: ${context.brief}\n` : ""}- Teslim edilen dosya sayısı: 4 (bu rapor hariç)\n- Kadro: ${state.agents.length} kişi\n\n## Sonuç\n${r.reached} modellenen aday, ${r.interested} ilgi, ${r.customers} müşteri. ${r.reason}\n\n## Fiyat kararı\n${priceBlock}\n\n## Bu pilotu satın alanlar\n${buyerBlock}\n\n## Gün sonu tablosu\n\n| Kalem | Tür | Tutar (simülasyon TL) | Açıklama |\n|---|---|---|---|\n${table}\n\n## Ürün hattı\n${(state.products || []).length ? state.products.map((x) => `- ${x.title} — ${x.status === "active" ? `${x.customers} müşteri` : `${x.retiredDay}. günde durduruldu`}`).join("\\n") : "- Henüz kalıcı bir ürün hattı yok."}\n\n## Şirketin ilkeleri\n${(state.principles || []).length ? state.principles.map((x) => `- ${x.text}`).join("\\n") : "- Henüz yazılmış bir ilke yok."}\n\n## Nakit ve borç\n- Kasa: ${state.company.cash} TL\n- Borç: ${state.finance?.debt || 0} TL (kredi limiti ${state.finance?.creditLimit || 0} TL)\n- Bugüne kadar çekilen kredi: ${state.finance?.borrowed || 0} TL, kapatılan: ${state.finance?.repaid || 0} TL, ödenen faiz: ${state.finance?.interestPaid || 0} TL\n${(context.finance?.notes || []).length ? context.finance.notes.map((n) => `- Bugün: ${n}`).join("\\n") : "- Bugün ek finansman hareketi olmadı."}${state.finance?.crisisDays ? `\n- Nakit krizi sürüyor: ${state.finance.crisisDays}. mesai.` : ""}\n\n## Kümülatif\n- Toplam gelir: ${state.company.revenue} TL\n- Müşteri: ${state.company.customers}\n- İtibar: ${state.company.reputation}\n- Takım uyumu: ${state.company.teamwork}\n- Bordro: ${state.company.payroll} TL / mesai\n\n## Ders\n${context.lesson}\n\n## Sınır\nBu tablodaki tutarlar sentetik pazar modelinden gelir. Gerçek bir gelir tablosu, vergi hesabı veya yatırım önerisi değildir.\n`,
   };
 }
 
@@ -1404,6 +1571,22 @@ export function createEngine(options = {}) {
         );
         const enough = context.budget >= Math.min(300, preferred.strategy.cost);
         context.researchOnly = !enough;
+        context.pricing = choosePrice({
+          strategy: preferred.strategy,
+          learning: current.learning[preferred.strategy.id],
+          cash: current.company.cash,
+          payroll: current.company.payroll,
+          day: context.day,
+        });
+        context.price = context.pricing.chosen.price;
+        event(
+          context,
+          "selin",
+          "finance",
+          `Fiyat kararı · ${context.pricing.scenarios
+            .map((s) => `${s.label} ${s.price} TL`)
+            .join(" · ")}. Seçilen: ${context.pricing.chosen.label}, ${context.price} TL. Gerekçe: ${context.pricing.reason}`,
+        );
         for (const [index, p] of candidates.entries()) {
           const votes = current.agents.map((a) => {
             const opinion = context.opinions.find((o) => o.agentId === a.id);
@@ -1441,7 +1624,7 @@ export function createEngine(options = {}) {
             ownerId: p.sponsors[0]?.agentId || "deniz",
             category: p.strategy.category,
             votes,
-            expectedImpact: `Hipotez: ${p.strategy.hypothesis} Test fiyatı ${p.strategy.price} simülasyon TL.`,
+            expectedImpact: `Hipotez: ${p.strategy.hypothesis} Test fiyatı ${selected ? context.price : p.strategy.price} simülasyon TL.`,
             result: null,
             createdAt: now().toISOString(),
           };
@@ -1594,8 +1777,19 @@ export function createEngine(options = {}) {
               learning: current.learning[context.strategy.id],
               condition: context.condition || conditionFor(runDate),
               morale: current.company.morale,
+              price: context.price,
+              scenario: context.pricing?.chosen?.id,
             });
         context.result = result;
+        if (result.buyers?.length)
+          event(
+            context,
+            "can",
+            "product",
+            `Pilotu satın alan ${result.buyers.length} işletme: ${result.buyers
+              .map((b) => `${b.label} · ${b.role}`)
+              .join("; ")}. Beheri ${result.price} TL. ${result.buyers[0].note}`,
+          );
         const payroll = payrollOf(current.agents);
         const recurring = round(current.company.customers * RETAINER);
         context.payroll = payroll;
@@ -1618,7 +1812,7 @@ export function createEngine(options = {}) {
           35,
           95,
         );
-        const resultText = `SİMÜLASYON: ${result.reached} modellenen aday, ${result.interested} ilgi, ${result.customers} müşteri. Pilot geliri ${result.revenue} TL; bakım geliri ${recurring} TL; deney gideri ${result.cost} TL; bordro ${payroll} TL; günün nakit etkisi ${round(result.revenue + recurring - result.cost - payroll)} TL. ${result.reason}`;
+        const resultText = `SİMÜLASYON: ${result.reached} modellenen aday, ${result.interested} ilgi, ${result.customers} müşteri. Pilot geliri ${result.revenue} TL (${result.customers} × ${result.price} TL); bakım geliri ${recurring} TL; deney gideri ${result.cost} TL; bordro ${payroll} TL; günün nakit etkisi ${round(result.revenue + recurring - result.cost - payroll)} TL. ${result.reason}`;
         const decision = current.decisions.find(
           (d) => d.id === context.decisionId,
         );
@@ -1856,7 +2050,7 @@ export function createEngine(options = {}) {
               id: productKey,
               title: context.strategy.title,
               field: context.strategy.field || current.company.focus,
-              price: context.strategy.price,
+              price: context.price || context.strategy.price,
               customers: context.result.customers,
               day: context.day,
               status: "active",
