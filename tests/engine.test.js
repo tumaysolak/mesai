@@ -178,22 +178,32 @@ test("concurrent attempts and repeated durable keys cannot create duplicate days
   assert.equal(engine.state().artifacts.length, 5);
 });
 
-test("08:00 schedule runs once per Istanbul date, including weekends and startup catch-up", async (t) => {
-  let clock = new Date("2026-09-12T04:59:59Z"); // Saturday
+test("08:00 schedule runs once per Istanbul date, closes at the weekend and catches up after a restart", async (t) => {
+  let clock = new Date("2026-09-10T04:59:59Z"); // Thursday, just before the bell
   const engine = engineFor(t, { clock: () => clock });
   assert.equal((await engine.tick()).reason, "before_schedule");
-  clock = new Date("2026-09-12T05:00:00Z"); // 08:00, the shift opens
+  clock = new Date("2026-09-10T05:00:00Z"); // 08:00, the shift opens
   const opened = await engine.tick();
   assert.equal(opened.started, true);
   assert.equal(opened.completed, false, "mesai 17.00'ye kadar sürer");
   assert.equal(engine.state().runtime.status, "running");
-  clock = new Date("2026-09-12T14:00:00Z"); // 17:00, the shift closes
+  clock = new Date("2026-09-10T14:00:00Z"); // 17:00, the shift closes
   assert.equal((await engine.tick()).completed, true);
   assert.equal((await engine.tick()).reason, "duplicate");
-  clock = new Date("2026-09-13T15:30:00Z"); // restart after the whole day is due
+  clock = new Date("2026-09-11T15:30:00Z"); // Friday, restart once the day is due
   assert.equal((await engine.tick()).completed, true);
   assert.equal(engine.state().company.day, 2);
   assert.equal((await engine.tick()).reason, "duplicate");
+  // Saturday and Sunday the office stays shut, whatever the hour.
+  clock = new Date("2026-09-12T09:00:00Z");
+  assert.equal((await engine.tick()).reason, "weekend");
+  clock = new Date("2026-09-13T15:30:00Z");
+  assert.equal((await engine.tick()).reason, "weekend");
+  assert.equal(engine.state().company.day, 2);
+  // Monday opens as usual, and the weekend costs the company no day number.
+  clock = new Date("2026-09-14T15:30:00Z");
+  assert.equal((await engine.tick()).completed, true);
+  assert.equal(engine.state().company.day, 3);
 });
 
 test("owner pause survives restart and blocks manual and scheduled days", async (t) => {

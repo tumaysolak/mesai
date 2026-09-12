@@ -70,13 +70,26 @@ export function phaseTime(date, phase) {
   const step = SHIFT_PLAN[Math.min(phase, SHIFT_PLAN.length - 1)];
   return new Date(`${date}T${step.at}:00+03:00`);
 }
+// The company keeps office hours, and office hours include a weekend off.
+// Noon Istanbul is safely inside the same calendar day in UTC, so the weekday
+// can be read without a timezone library.
+export function isWorkday(date) {
+  const day = new Date(`${date}T12:00:00+03:00`).getUTCDay();
+  return day !== 0 && day !== 6;
+}
+
 export function nextScheduledRun(now = new Date(), startDate = null) {
   const date = new Date(now);
-  if (startDate && localDate(date) < startDate)
-    return new Date(`${startDate}T08:00:00+03:00`).toISOString();
-  const today = new Date(`${localDate(date)}T08:00:00+03:00`);
-  if (today <= date) today.setUTCDate(today.getUTCDate() + 1);
-  return today.toISOString();
+  let next;
+  if (startDate && localDate(date) < startDate) {
+    next = new Date(`${startDate}T08:00:00+03:00`);
+  } else {
+    next = new Date(`${localDate(date)}T08:00:00+03:00`);
+    if (next <= date) next.setUTCDate(next.getUTCDate() + 1);
+  }
+  // Saturday and Sunday are closed: the next shift is Monday morning.
+  while (!isWorkday(localDate(next))) next.setUTCDate(next.getUTCDate() + 1);
+  return next.toISOString();
 }
 function rng(seed) {
   let value = hash(seed);
@@ -519,6 +532,60 @@ function initialState() {
         description: "Takım uyumunu 85'e çıkar ve 10 kişiye ulaş.",
         unlocked: false,
       },
+      {
+        id: "inventor",
+        title: "Kendi işini icat etti",
+        description: "Ekibin kendi bulduğu bir iş hattından müşteri kazan.",
+        unlocked: false,
+      },
+      {
+        id: "lineup",
+        title: "Ürün hattı kuruldu",
+        description: "Aynı anda üç ürün sayfasını yayında tut.",
+        unlocked: false,
+      },
+      {
+        id: "month",
+        title: "Bir ay ayakta",
+        description: "20 çalışma gününü tamamla.",
+        unlocked: false,
+      },
+      {
+        id: "pricing",
+        title: "Fiyatı öğrendi",
+        description: "Karnede en az 5 fiyat kararı ver ve yarısından fazlasını tutturmuş ol.",
+        unlocked: false,
+      },
+      {
+        id: "profit",
+        title: "Kasa iki katı",
+        description: "Kasayı 50.000 simülasyon TL'nin üzerine çıkar.",
+        unlocked: false,
+      },
+      {
+        id: "retained",
+        title: "Bordroyu abonelik ödüyor",
+        description: "Bir mesaide bakım gelirinin bordroyu karşılamasını sağla.",
+        unlocked: false,
+      },
+      {
+        id: "comeback",
+        title: "Dipten dönüş",
+        description: "Kredi çektikten sonra borcun tamamını kapat.",
+        unlocked: false,
+      },
+      {
+        id: "sixfigure",
+        title: "Altı hane",
+        description: "Toplam ciroyu 100.000 simülasyon TL'ye taşı.",
+        unlocked: false,
+      },
+      {
+        id: "quarter",
+        title: "Bir çeyrek",
+        description: "60 çalışma gününü tamamla.",
+        unlocked: false,
+      },
     ],
     config: {
       scheduleHour: 8,
@@ -682,6 +749,16 @@ export function validateNewStrategy(value) {
 }
 function validAiResponse(purpose, response, available) {
   if (purpose === "commission") return Boolean(validateNewStrategy(response));
+  // The launch step asks for a product page (tagline/problem/how/audience),
+  // never a "brief" — so the generic check below could never pass and every
+  // product page silently fell back to the template. Check what is asked for.
+  if (purpose === "launch") {
+    const filled = ["tagline", "problem", "how", "audience"].filter(
+      (key) =>
+        typeof response[key] === "string" && response[key].trim().length >= 20,
+    );
+    return filled.includes("tagline") && filled.length >= 3;
+  }
   if (purpose === "retro")
     return Boolean(
       cleanText(response.lesson, 400).trim().length >= 20 &&
@@ -2371,6 +2448,26 @@ export function createEngine(options = {}) {
             raise: current.hiring.raises > 0,
             dreamteam:
               current.company.teamwork >= 85 && current.agents.length >= 10,
+            inventor:
+              context.strategy?.origin === "ai" &&
+              (context.result?.customers || 0) > 0,
+            lineup:
+              (current.products || []).filter((p) => p.status === "active")
+                .length >= 3,
+            month: context.day >= 20,
+            pricing:
+              (current.scoreboard?.pricedDays || 0) >= 5 &&
+              (current.scoreboard?.priceHits || 0) * 2 >
+                current.scoreboard.pricedDays,
+            profit: current.company.cash >= 50000,
+            retained:
+              (context.recurring || 0) > 0 &&
+              (context.recurring || 0) >= (context.payroll || 0),
+            comeback:
+              (current.finance?.borrowed || 0) > 0 &&
+              (current.finance?.debt || 0) === 0,
+            sixfigure: current.company.revenue >= 100000,
+            quarter: context.day >= 60,
           }[achievement.id];
           if (!achievement.unlocked && condition) {
             achievement.unlocked = true;
@@ -2908,6 +3005,7 @@ export function createEngine(options = {}) {
     const date = localDate(now());
     if (s.config.startDate && date < s.config.startDate)
       return { started: false, reason: "before_start" };
+    if (!isWorkday(date)) return { started: false, reason: "weekend" };
     if (now() < new Date(`${date}T08:00:00+03:00`))
       return { started: false, reason: "before_schedule" };
     return run({ key: `schedule:${date}`, kind: "scheduled" });

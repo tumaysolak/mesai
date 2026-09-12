@@ -5420,3 +5420,49 @@ a.lp-file:hover {
     grid-template-columns: 1fr;
   }
 }
+
+/* Reports carry real tables; they get to look like tables. */
+.md-table-wrap {
+  margin: 12px 0 4px;
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: #fffefa;
+}
+.md-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+.md-table th,
+.md-table td {
+  padding: 9px 12px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--line);
+  line-height: 1.6;
+  white-space: nowrap;
+}
+.md-table th {
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 1.1px;
+  text-transform: uppercase;
+  color: #7d8a72;
+  background: #f4f5ee;
+  white-space: nowrap;
+}
+.md-table td:last-child {
+  white-space: normal;
+  min-width: 180px;
+  color: #88937d;
+}
+.md-table tbody tr:last-child th,
+.md-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+.md-table td:nth-child(3) {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  color: #2b3f2f;
+}
