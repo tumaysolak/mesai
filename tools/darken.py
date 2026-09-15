@@ -1,9 +1,20 @@
 import re, sys
 
 SRC = "src/styles.css"
-OUT = "src/panel-dark.css"
+# Two targets share one colour map: the panel shell and the public site.
+SITE = "--site" in sys.argv
+OUT = "src/site-dark.css" if SITE else "src/panel-dark.css"
 
-SKIP_PREFIX = (".lp-", ".legal-", ".gate-", ".lp", ".legal", ".gate")
+PANEL_SKIP = (".lp-", ".legal-", ".gate-", ".lp", ".legal", ".gate")
+# The product page and the legal pages are their own document; the gate keeps its
+# hand written theme in office.css.
+SITE_HEADS = (".lp", ".legal")
+# Shared components the public pages borrow from the panel's stylesheet.
+SITE_SHARED = (
+    ".button", ".signup", ".visitor", ".muted", ".panel", ".markdown",
+    ".tag", ".empty", ".form-message", ".portrait", ".ledger", ".organic",
+    ".product-list", ".principle-list", ".finance",
+)
 
 HEX = re.compile(r"#[0-9a-fA-F]{3,8}\b")
 
@@ -69,6 +80,8 @@ def remap(prop, value, keep_dark_text=False):
                        else "rgba(%d,%d,%d,.16)" % rgb)
             elif l > 0.30 and c < 0.12:
                 new = "rgba(255,255,255,.07)"
+            elif c < 0.2:
+                new = "rgba(255,255,255,.055)"
         elif prop in ("color", "fill", "stroke", "caret-color",
                       "-webkit-text-fill-color", "text-decoration-color"):
             if keep_dark_text:
@@ -95,12 +108,22 @@ def scope(selector):
         if not p or p.startswith("@") or p.startswith("from") or p.startswith("to"):
             return None
         head = p.split()[0].split(":")[0]
-        if any(head.startswith(x) for x in SKIP_PREFIX):
+        if p.startswith(":root") or p in ("html", "body", "*"):
+            continue
+        if SITE:
+            if head.startswith(".gate"):
+                continue
+            if head.startswith(SITE_HEADS):
+                kept.append(p)
+            elif head.startswith(SITE_SHARED):
+                # Only where the public pages actually render them.
+                kept.append(".lp " + p)
+                kept.append(".legal-page " + p)
+            continue
+        if any(head.startswith(x) for x in PANEL_SKIP):
             continue
         if p.startswith(".app-shell"):
             kept.append(p)
-        elif p.startswith(":root") or p in ("html", "body", "*"):
-            continue
         else:
             kept.append(".app-shell " + p)
     return ", ".join(kept) if kept else None
@@ -158,7 +181,9 @@ def convert(css, indent=""):
 
 css = open(SRC, encoding="utf-8").read()
 result = convert(css)
-header = ("/* Generated from styles.css: the same panel, read on a dark floor.\n"
-          "   Regenerate with tools/darken.py after editing styles.css. */\n\n")
+header = (
+    "/* Generated from styles.css. Regenerate with tools/darken.py"
+    f"{' --site' if SITE else ''} after editing styles.css. */\n\n"
+)
 open(OUT, "w", encoding="utf-8").write(header + result)
 print("rules:", result.count("{"))

@@ -92,6 +92,25 @@ function aiMock(calls, tagline = "Ölçümle başlayın.") {
         price: 3000,
         base: 0.45,
       });
+    if (system.includes("tanıtım sayfası metni"))
+      return response({
+        tagline,
+        problem:
+          "Ofislerde mesai disi tuketim kimsenin duzenli olarak bakmadigi bir kalem olarak kaliyor.",
+        how: "Bir haftalik kapanis gunlugu tutuluyor, sayac kayitlari ayni birime cekiliyor ve fark raporlaniyor.",
+        audience: "Tek binada kendi tuketimini izlemek isteyen kucuk isletmeler.",
+        steps: ["Kayit donemini sec", "Gunlugu doldur", "Fark raporunu oku"],
+        benefits: [
+          { title: "Olculen fark", text: "Tahmin degil, kayda dayanan bir sayi." },
+          { title: "Tek sayfa", text: "Rapor bir sayfayi gecmiyor." },
+          { title: "Kurulum yok", text: "Donanim gerekmiyor." },
+        ],
+        posts: {
+          x: "Bir haftalik kapanis gunlugu, tek sayfalik fark raporu.",
+          linkedin:
+            "Mesai disi tuketim kimsenin bakmadigi bir kalem.\n\nBir haftalik kayit tutuyoruz.\n\nSonuc tek sayfalik bir fark raporu.",
+        },
+      });
     const document = system.includes("Ekip görüşlerinden");
     return response(
       document
@@ -383,6 +402,79 @@ test("provider failures fall back visibly without leaking provider errors or key
   assert.match(state.runtime.error, /kurallar motoru/);
   assert.doesNotMatch(JSON.stringify(state), /test-secret|Provider rejected/);
   assert.equal(state.artifacts.length, 5);
+});
+
+test("a broken response schema is retried once, then recorded without the provider's words", async (t) => {
+  const calls = [];
+  const engine = engineFor(t, {
+    apiKey: secret,
+    dailyCallLimit: 24,
+    fetchImpl: async (url, options) => {
+      calls.push(JSON.parse(options.body).input[0].content);
+      return response({ unrelated: true });
+    },
+  });
+  await engine.run({ key: "retry-day" });
+  const state = engine.state();
+  // Every step asks twice and no more: a second chance, never a third.
+  const seats = calls.filter((system) => system.includes("Yalnız kendi görüşünü üret"));
+  assert.equal(seats.length, 16);
+  assert.equal(
+    seats.filter((system) => system.includes("şemasını tutturamadı")).length,
+    8,
+  );
+  assert.equal(state.runtime.mode, "rules");
+  // The record says which step fell back and why, in words of our own.
+  const fallbacks = state.runtime.lastFallbacks;
+  assert.ok(fallbacks.length > 0);
+  assert.ok(fallbacks.every((entry) => entry.reason === "sema"));
+  assert.ok(fallbacks.some((entry) => entry.purpose.startsWith("council-")));
+  assert.ok(fallbacks.every((entry) => entry.day === state.company.day));
+  assert.doesNotMatch(JSON.stringify(state), /test-secret|unrelated/);
+});
+
+test("a timeout is not retried, so a wall never costs two calls", async (t) => {
+  const calls = [];
+  const engine = engineFor(t, {
+    apiKey: secret,
+    dailyCallLimit: 24,
+    fetchImpl: async (url, options) => {
+      calls.push(JSON.parse(options.body).input[0].content);
+      const error = new Error("The operation was aborted");
+      error.name = "AbortError";
+      throw error;
+    },
+  });
+  await engine.run({ key: "timeout-day" });
+  const state = engine.state();
+  // One call per step and not one more: asking a wall twice buys nothing.
+  assert.equal(
+    calls.filter((system) => system.includes("şemasını tutturamadı")).length,
+    0,
+  );
+  assert.equal(calls.length, state.runtime.lastFallbacks.length);
+  assert.equal(state.runtime.mode, "rules");
+  assert.ok(
+    state.runtime.lastFallbacks.every((entry) => entry.reason === "zaman asimi"),
+  );
+});
+
+test("the visitor cap survives a clock that disagrees with the database", async (t) => {
+  // Every date here is written from the engine's clock; the cleanup used to read
+  // SQLite's own, and wiped the live row the moment the two disagreed.
+  const engine = engineFor(t, { fetchImpl: () => { throw new Error("no ai"); } });
+  await engine.run({ key: "clock-day" });
+  const first = await engine.visitorTask({
+    brief: "Ayni gun icinde ikinci kez denemek istiyorum",
+    ip: "203.0.113.11",
+  });
+  assert.ok(first.work);
+  assert.equal(engine.visitorStatus("203.0.113.11").remaining, 0);
+  const second = await engine.visitorTask({
+    brief: "Ayni ziyaretci hemen ardindan tekrar yaziyor",
+    ip: "203.0.113.11",
+  });
+  assert.equal(second.error, "quota");
 });
 
 test("valid JSON without required council or document fields is not counted as successful AI work", async (t) => {

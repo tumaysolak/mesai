@@ -148,7 +148,14 @@ Panelin ana ekranı, şirketin izometrik bir kat planıdır. Altı bölüm — S
 - **Görev durumu:** sağdaki panel o anki işleri durumlarına göre listeler. Bir bölüm seçiliyken liste yalnızca o bölümü gösterir. Panelin üstündeki alan, ziyaretçinin ekibe iş vermesi içindir (günde bir kez).
 - **Bugünün panosu:** üst bardaki düğme, günün işlerini sırada / çalışılıyor / onay bekliyor / bitti sütunlarına ayıran tam ekran panoyu açar.
 
-Panel koyu temadır; ürün sayfası ve hukuki sayfalar açık temada kalır. Koyu tema `src/panel-dark.css` dosyasındadır ve `styles.css` üzerinden üretilir: `styles.css` değiştiğinde `python3 tools/darken.py` ile yeniden üretilmelidir.
+Ofis görünümü **tam sayfa** da açılabilir: üst bardaki düğme haritayı ve görev panelini bütün ekrana yayar, `Esc` kapatır. Sayfanın kendi yığın bağlamı `position: fixed`i hapsettiği için bu görünüm `body`ye portal ile basılır ve kendi renk değişkenlerini taşır.
+
+Sitenin tamamı koyu temadır. Koyu tema `styles.css` üzerinden üretilir: panel için `src/panel-dark.css`, ürün ve hukuki sayfalar için `src/site-dark.css`. `styles.css` değiştiğinde ikisi de yeniden üretilmelidir:
+
+```
+python3 tools/darken.py
+python3 tools/darken.py --site
+```
 
 ## Mimari
 

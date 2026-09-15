@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Landing from "./Landing.jsx";
 import Markdown from "./Markdown.jsx";
 import Reports from "./Reports.jsx";
@@ -45,6 +46,7 @@ import {
   LockKeyhole,
   LogOut,
   Maximize2,
+  Minimize2,
   Mail,
   Megaphone,
   Menu,
@@ -278,7 +280,9 @@ function readEvent(message) {
       cut > 0 && cut <= 70 && !head.slice(0, cut).includes(". ")
         ? head.slice(0, cut)
         : "";
-  const blocks = [{ label: "", body: title ? head.slice(cut + 2).trim() : head }]
+  const blocks = [
+    { label: "", body: title ? head.slice(cut + 2).trim() : head },
+  ]
     .concat(
       parts.map((part) => {
         const at = part.indexOf(": ");
@@ -538,6 +542,8 @@ function Overview({
   setOfficeOpen,
   focus,
   setFocus,
+  wide,
+  setWide,
 }) {
   const { company, agents, runtime, tasks, artifacts, decisions, history } =
     data;
@@ -549,27 +555,11 @@ function Overview({
     ) || decisions[0];
   const activeId = runtime.status === "running" ? events[0]?.agentId : null;
   const pending = decisions.filter((d) => d.status === "pending").length;
-  return (
-    <>
-      <SectionHeading
-        eyebrow="OTONOM ŞİRKET DENEYİ · MESAI LABS"
-        title={
-          <>
-            Fikirden işe.<span className="heading-emphasis"> Her gün.</span>
-          </>
-        }
-        description={`${agents.length} farklı karakter. Ortak bir hedef. Kendi kendine ilerleyen, büyüyen bir şirket.`}
-        action={
-          <div className="live-pill">
-            <span className="live-dot" />
-            <b>CANLI</b>
-            <span>
-              İstanbul {clock} · {company.day}. mesai ·{" "}
-              {runtime.status === "running" ? "08.00-17.00 açık" : "kapalı"}
-            </span>
-          </div>
-        }
-      />
+  // The full page view has to escape the page's own stacking context, so it is
+  // rendered into the body instead of in place. React keeps it the same element
+  // either way, so the camera and the focus survive the move.
+  const office = (
+    <div className={`ao-shell ${wide ? "is-wide" : ""}`}>
       <div className="ao-top">
         <span className="ao-top-mark">
           MESAİ OFİS<sup>V1</sup>
@@ -597,6 +587,14 @@ function Overview({
         <button className="ao-board-open" onClick={() => setOfficeOpen(true)}>
           <Columns3 size={12} /> BUGÜNÜN PANOSU
         </button>
+        <button
+          className="ao-board-open"
+          onClick={() => setWide(!wide)}
+          title={wide ? "Tam sayfadan çık (Esc)" : "Ofisi tam sayfa aç"}
+        >
+          {wide ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
+          {wide ? "ÇIK" : "TAM SAYFA"}
+        </button>
         <span className="ao-clock">{clock}</span>
       </div>
       <div className="ao-wrap">
@@ -611,22 +609,48 @@ function Overview({
           focus={focus}
           setFocus={setFocus}
         />
-        <TaskPanel
-          tasks={tasks}
-          decisions={decisions}
-          agents={agents}
-          focus={focus}
-          setFocus={setFocus}
-        />
+        <div className="ao-panel-slot">
+          <TaskPanel
+            tasks={tasks}
+            decisions={decisions}
+            agents={agents}
+            focus={focus}
+            setFocus={setFocus}
+          />
+        </div>
       </div>
+    </div>
+  );
+  return (
+    <>
+      <SectionHeading
+        eyebrow="OTONOM ŞİRKET DENEYİ · MESAI LABS"
+        title={
+          <>
+            Fikirden işe.<span className="heading-emphasis"> Her gün.</span>
+          </>
+        }
+        description={`${agents.length} farklı karakter. Ortak bir hedef. Kendi kendine ilerleyen, büyüyen bir şirket.`}
+        action={
+          <div className="live-pill">
+            <span className="live-dot" />
+            <b>CANLI</b>
+            <span>
+              İstanbul {clock} · {company.day}. mesai ·{" "}
+              {runtime.status === "running" ? "08.00-17.00 açık" : "kapalı"}
+            </span>
+          </div>
+        }
+      />
+      {wide ? createPortal(office, document.body) : office}
       <div className="ao-officefoot">
         <span>
           <span className="status-dot" />
           {labelStatus(runtime.status)}
         </span>
         <span>
-          <Wallet size={13} /> Bordro <b>{money(company.payroll || 0)}</b> · mesai
-          başına
+          <Wallet size={13} /> Bordro <b>{money(company.payroll || 0)}</b> ·
+          mesai başına
         </span>
         <span>
           <Clock3 size={13} />{" "}
@@ -882,8 +906,8 @@ function Scorecard({ board }) {
           <p>
             Pazar modeli aynı tohumla tekrar çalıştırılabiliyor, bu yüzden
             seçilmeyen iki fiyatın o gün ne getireceği de biliniyor. Karne bu
-            karşılaştırmadan çıkıyor; iyi görünmek için değil, yanılmayı
-            görünür kılmak için duruyor.
+            karşılaştırmadan çıkıyor; iyi görünmek için değil, yanılmayı görünür
+            kılmak için duruyor.
           </p>
         </div>
         <span className="muted">{shifts} mesai</span>
@@ -908,12 +932,10 @@ function Scorecard({ board }) {
             </div>
             <div>
               <span className="score-label">Kaçırılan gelir</span>
-              <strong>
-                {money(board?.missedRevenue || 0)}
-              </strong>
+              <strong>{money(board?.missedRevenue || 0)}</strong>
               <p>
-                Daha iyi fiyat seçilseydi aynı günlerde ek olarak bu kadar
-                gelir oluşacaktı.
+                Daha iyi fiyat seçilseydi aynı günlerde ek olarak bu kadar gelir
+                oluşacaktı.
               </p>
             </div>
             <div>
@@ -992,7 +1014,9 @@ function Team({ data, openAgent }) {
         <div>
           <span>KADRO</span>
           <b>{data.agents.length} kişi</b>
-          <small>{data.agents.filter((a) => a.founder).length} kurucu ekip</small>
+          <small>
+            {data.agents.filter((a) => a.founder).length} kurucu ekip
+          </small>
         </div>
         <div>
           <span>BORDRO · SİMÜLASYON</span>
@@ -1460,8 +1484,8 @@ function About({ data }) {
             Geçmiş deneyimleri, motivasyonları ve korkuları olan kurgusal
             personalar. Kurucu ekip sekiz kişiydi; şirket büyüdükçe aday
             havuzundan yeni karakterler katılır. Hiçbiri gerçek bir kişinin
-            kopyası değildir. Bu özellikler
-            klinik tanı veya psikolojik değerlendirme olarak sunulmaz.
+            kopyası değildir. Bu özellikler klinik tanı veya psikolojik
+            değerlendirme olarak sunulmaz.
           </p>
         </section>
         <section className="panel about-panel">
@@ -1501,8 +1525,8 @@ function About({ data }) {
         </section>
       </div>
       <p className="about-credit">
-        MESAI Labs bağımsız bir deneydir; herhangi bir işveren adına
-        yürütülmez. İletişim: iletisim@mesailabs.com
+        MESAI Labs bağımsız bir deneydir; herhangi bir işveren adına yürütülmez.
+        İletişim: iletisim@mesailabs.com
       </p>
     </>
   );
@@ -1733,7 +1757,8 @@ function Visitors({ token }) {
   return (
     <div className="owner-visitors">
       <button className="text-button" onClick={() => setOpen(!open)}>
-        <Users size={15} /> {open ? "İzleyici listesini kapat" : "Paneli kimler izledi"}
+        <Users size={15} />{" "}
+        {open ? "İzleyici listesini kapat" : "Paneli kimler izledi"}
         {total ? ` (${total})` : ""}
       </button>
       {open && (
@@ -2044,6 +2069,7 @@ export default function App() {
     [decisionModal, setDecisionModal] = useState(null),
     [officeOpen, setOfficeOpen] = useState(false),
     [focus, setFocus] = useState(null),
+    [wide, setWide] = useState(false),
     [ownerOpen, setOwnerOpen] = useState(false);
   const [now, setNow] = useState(Date.now()),
     [clock, setClock] = useState("");
@@ -2100,6 +2126,19 @@ export default function App() {
       if (mounted.current) setLoading(false);
     }
   }
+  // The full page office is a mode, not a route: Escape leaves it and the page
+  // underneath does not scroll while it is open.
+  useEffect(() => {
+    if (!wide) return;
+    const key = (event) => event.key === "Escape" && setWide(false);
+    document.addEventListener("keydown", key);
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", key);
+      document.body.style.overflow = previous;
+    };
+  }, [wide]);
   useEffect(() => {
     mounted.current = true;
     refresh();
@@ -2436,6 +2475,8 @@ export default function App() {
                   setOfficeOpen={setOfficeOpen}
                   focus={focus}
                   setFocus={setFocus}
+                  wide={wide}
+                  setWide={setWide}
                 />
               )}
               {page === "team" && (
@@ -2506,7 +2547,9 @@ export default function App() {
               Karakterler ve ticari sonuçlar kurgusal. Üretilen dosyalar gerçek.
             </p>
             <span className="footer-legal">
-              <button onClick={() => goTo("/gizlilik")}>Gizlilik ve KVKK</button>
+              <button onClick={() => goTo("/gizlilik")}>
+                Gizlilik ve KVKK
+              </button>
               <button onClick={() => goTo("/kosullar")}>Koşullar</button>
               <button onClick={() => goTo("/iletisim")}>İletişim</button>
             </span>

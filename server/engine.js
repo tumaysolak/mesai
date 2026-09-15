@@ -454,6 +454,7 @@ function initialState() {
       dailyCallLimit: 12,
       callsToday: 0,
       error: null,
+      lastFallbacks: [],
     },
     agents: PERSONAS.map((p) => ({
       ...p,
@@ -753,11 +754,17 @@ function validAiResponse(purpose, response, available) {
   // never a "brief" — so the generic check below could never pass and every
   // product page silently fell back to the template. Check what is asked for.
   if (purpose === "launch") {
-    const filled = ["tagline", "problem", "how", "audience"].filter(
+    // A tagline is one short sentence; demanding twenty characters of it was
+    // rejecting perfectly good pages and sending them to the template instead.
+    // What the page actually needs is a headline plus two filled sections.
+    const headline =
+      typeof response.tagline === "string" &&
+      response.tagline.trim().length >= 8;
+    const sections = ["problem", "how", "audience"].filter(
       (key) =>
         typeof response[key] === "string" && response[key].trim().length >= 20,
     );
-    return filled.includes("tagline") && filled.length >= 3;
+    return headline && sections.length >= 2;
   }
   if (purpose === "retro")
     return Boolean(
@@ -1301,17 +1308,9 @@ export function createEngine(options = {}) {
       throw error;
     }
   }
-  async function ai(context, purpose, systemPrompt, input) {
-    if (!apiKey || context.kind === "bootstrap")
-      return null;
-    const cacheKey = `${context.id}:${purpose}`;
-    const cached = db
-      .prepare("SELECT response FROM llm_cache WHERE cache_key=?")
-      .get(cacheKey);
-    if (cached) {
-      context.aiSuccesses++;
-      return JSON.parse(cached.response);
-    }
+  // The daily budget is shared by every step, so a call is reserved before it is
+  // made and a retry has to pay for itself like any other call.
+  function reserveCall() {
     const date = localDate(now());
     db.exec("BEGIN IMMEDIATE");
     try {
@@ -1323,59 +1322,115 @@ export function createEngine(options = {}) {
         .get(date).calls;
       if (count >= dailyCallLimit) {
         db.exec("COMMIT");
-        context.fallbackReasons.add(
-          "Günlük yapay zekâ çağrı sınırına ulaşıldı.",
-        );
-        return null;
+        return false;
       }
       db.prepare("UPDATE usage SET calls=calls+1 WHERE date=?").run(date);
       db.exec("COMMIT");
+      return true;
     } catch (error) {
       db.exec("ROLLBACK");
       throw error;
     }
-    try {
-      const parsed = await requestModel({
-        systemPrompt,
-        input,
-        maxOutput:
-          purpose === "artifact-board"
-            ? maxOutputTokens
-            : Math.min(maxOutputTokens, 2200),
-      });
-      if (
-        !parsed ||
-        Array.isArray(parsed) ||
-        typeof parsed !== "object" ||
-        !validAiResponse(purpose, parsed, availableStrategies())
-      )
-        throw new Error("Yanıt şeması geçersiz");
-      db.prepare(
-        "INSERT OR REPLACE INTO llm_cache(cache_key,response) VALUES(?,?)",
-      ).run(cacheKey, JSON.stringify(parsed));
-      context.aiSuccesses++;
-      current.runtime.mode = "ai";
-      current.runtime.provider = `OpenAI · ${model}`;
-      save();
-      return parsed;
-    } catch (error) {
-      const detail = /^HTTP \d{3}$/.test(error.message)
-        ? ` (${error.message})`
-        : error.message === "Yanıt şeması geçersiz"
-          ? " (yanıt şeması geçersiz)"
-          : "";
-      // The panel no longer shows this to watchers, so the log is the only
-      // place left to learn which step fell back and why.
-      console.error(
-        `AI fallback [${purpose}] ${model}: ${error.name} ${error.message}`,
-      );
-      context.fallbackReasons.add(
-        error.name === "AbortError"
-          ? "Yapay zekâ yanıt süresi aşıldı; kurallar motoru devraldı."
-          : `Yapay zekâ çağrısı tamamlanamadı${detail}; kurallar motoru devraldı.`,
-      );
+  }
+  // A fallback is a silent quality loss: the shift still finishes, but one voice
+  // came from the rules engine instead of the model. The log buffer is wiped on
+  // every restart, so the last few are kept in the state as well.
+  function recordFallback(purpose, reason) {
+    const list = (current.runtime.lastFallbacks ||= []);
+    list.unshift({
+      day: current.company.day,
+      purpose,
+      reason,
+      at: new Date(now()).toISOString(),
+    });
+    current.runtime.lastFallbacks = list.slice(0, 12);
+  }
+  // A provider error message can carry the key that was rejected, so nothing
+  // from it is ever stored — only which of the known failures it was.
+  function classifyFailure(error) {
+    if (error.name === "AbortError") return "zaman asimi";
+    const http = /^HTTP (\d{3})$/.exec(error.message);
+    if (http) return `http ${http[1]}`;
+    if (error.message === "Yanıt şeması geçersiz") return "sema";
+    return "baglanti";
+  }
+  async function ai(context, purpose, systemPrompt, input) {
+    if (!apiKey || context.kind === "bootstrap")
       return null;
+    const cacheKey = `${context.id}:${purpose}`;
+    const cached = db
+      .prepare("SELECT response FROM llm_cache WHERE cache_key=?")
+      .get(cacheKey);
+    if (cached) {
+      context.aiSuccesses++;
+      return JSON.parse(cached.response);
     }
+    const maxOutput =
+      purpose === "artifact-board"
+        ? maxOutputTokens
+        : Math.min(maxOutputTokens, 2200);
+    // A response that parses but misses the contract is usually one field away
+    // from valid, so it is worth asking once more with the rule spelled out.
+    const SCHEMA = "Yanıt şeması geçersiz";
+    const correction = ` Önceki yanıtın beklenen JSON şemasını tutturamadı. Yalnız istenen alanları, istenen tiplerle ve tam olarak doldurulmuş şekilde döndür; açıklama ekleme.`;
+    let lastError = null;
+    for (let attempt = 0; attempt < 2; attempt += 1) {
+      if (!reserveCall()) {
+        context.fallbackReasons.add(
+          "Günlük yapay zekâ çağrı sınırına ulaşıldı.",
+        );
+        if (lastError) recordFallback(purpose, "cagri siniri");
+        return null;
+      }
+      try {
+        const parsed = await requestModel({
+          systemPrompt: attempt ? systemPrompt + correction : systemPrompt,
+          input,
+          maxOutput,
+        });
+        if (
+          !parsed ||
+          Array.isArray(parsed) ||
+          typeof parsed !== "object" ||
+          !validAiResponse(purpose, parsed, availableStrategies())
+        )
+          throw new Error(SCHEMA);
+        db.prepare(
+          "INSERT OR REPLACE INTO llm_cache(cache_key,response) VALUES(?,?)",
+        ).run(cacheKey, JSON.stringify(parsed));
+        context.aiSuccesses++;
+        current.runtime.mode = "ai";
+        current.runtime.provider = `OpenAI · ${model}`;
+        save();
+        return parsed;
+      } catch (error) {
+        lastError = error;
+        console.error(
+          `AI ${attempt ? "retry" : "attempt"} [${purpose}] ${model}: ${error.name} ${error.message}`,
+        );
+        // Only a broken contract is worth a second try; a timeout or an HTTP
+        // error would just spend another call on the same wall.
+        if (error.message !== SCHEMA) break;
+      }
+    }
+    const error = lastError;
+    const detail = /^HTTP \d{3}$/.test(error.message)
+      ? ` (${error.message})`
+      : error.message === SCHEMA
+        ? " (yanıt şeması geçersiz)"
+        : "";
+    // The panel no longer shows this to watchers, so the log and the runtime
+    // record are the only places left to learn which step fell back and why.
+    console.error(
+      `AI fallback [${purpose}] ${model}: ${error.name} ${error.message}`,
+    );
+    recordFallback(purpose, classifyFailure(error));
+    context.fallbackReasons.add(
+      error.name === "AbortError"
+        ? "Yapay zekâ yanıt süresi aşıldı; kurallar motoru devraldı."
+        : `Yapay zekâ çağrısı tamamlanamadı${detail}; kurallar motoru devraldı.`,
+    );
+    return null;
   }
   function recordTokens(usageValue) {
     const used = usageValue || {};
@@ -1592,7 +1647,7 @@ export function createEngine(options = {}) {
               ? await ai(
                   context,
                   `council-${a.id}`,
-                  `${baseSystem} ${focusLine()} Sen ${a.name}, ${a.role}. Kişisel geçmişin: ${a.backstory} Motivasyonun: ${a.motivation} Kaygın: ${a.fear} Yalnız kendi görüşünü üret. ${commissioned ? `Bu mesaide kurucudan gelen iş var: "${commissioned.title}". Ne yapılacağını tartışma, kendi rolünden nasıl yapılacağını söyle ve strategyId olarak "${commissioned.id}" gönder.` : "Yeni bir ürün fikri keşfedebilirsin; uygun yeni fikir varsa önceden verilen seçeneklerle sınırlı kalma ve gerekirse faaliyet alanının dışına çık."} JSON biçimi: {"strategyId":"var olan seçenek id, yeni fikirse boş string","newStrategy":null veya {"title":"yeni özgün başlık","segment":"hedef müşteri","problem":"somut sorun","solution":"düşük kapsamlı teslim","hypothesis":"test edilebilir talep hipotezi","field":"kısa faaliyet alanı adı","cost":300..3000,"price":900..12000,"base":0.25..0.65,"buyers":{"kinds":["4-5 farklı işletme türü, küçük harf"],"roles":["2-4 karar veren rol"],"sizes":[en az çalışan, en çok çalışan]}},"rationale":"özgül gerekçe ve bellekteki dersin etkisi","risk":"özgül çekince","priority":1..10,"proposal":"bu güne özel somut aksiyon"}. base yalnız sentetik pazar modelinin belirsiz başlangıç varsayımıdır.`,
+                  `${baseSystem} ${focusLine()} Sen ${a.name}, ${a.role}. Kişisel geçmişin: ${a.backstory} Motivasyonun: ${a.motivation} Kaygın: ${a.fear} Yalnız kendi görüşünü üret. ${commissioned ? `Bu mesaide kurucudan gelen iş var: "${commissioned.title}". Ne yapılacağını tartışma, kendi rolünden nasıl yapılacağını söyle ve strategyId olarak "${commissioned.id}" gönder.` : "Yeni bir ürün fikri keşfedebilirsin; uygun yeni fikir varsa önceden verilen seçeneklerle sınırlı kalma ve gerekirse faaliyet alanının dışına çık."} Kural: strategyId yalnız options listesindeki id'lerden biri olabilir, listede olmayan bir id uydurma; yeni fikir öneriyorsan strategyId'yi boş string bırak ve newStrategy'nin beş alanını (title, segment, problem, solution, hypothesis) en az sekizer karakterle doldur. İkisinden biri mutlaka dolu olmalı. JSON biçimi: {"strategyId":"options listesindeki bir id, yeni fikirse boş string","newStrategy":null veya {"title":"yeni özgün başlık","segment":"hedef müşteri","problem":"somut sorun","solution":"düşük kapsamlı teslim","hypothesis":"test edilebilir talep hipotezi","field":"kısa faaliyet alanı adı","cost":300..3000,"price":900..12000,"base":0.25..0.65,"buyers":{"kinds":["4-5 farklı işletme türü, küçük harf"],"roles":["2-4 karar veren rol"],"sizes":[en az çalışan, en çok çalışan]}},"rationale":"özgül gerekçe ve bellekteki dersin etkisi","risk":"özgül çekince","priority":1..10,"proposal":"bu güne özel somut aksiyon"}. base yalnız sentetik pazar modelinin belirsiz başlangıç varsayımıdır.`,
                   {
                     day: context.day,
                     company: current.company,
@@ -2681,7 +2736,7 @@ export function createEngine(options = {}) {
     const drafted = await ai(
       context,
       "launch",
-      `${baseSystem} Sen büyüme lideri Can'sın. Şirketin bugün yayına aldığı ürün için sade, abartısız Türkçe bir tanıtım sayfası metni yaz. Şapkalı harf kullanma. Sayfada satış vaadi değil, ne yaptığı ve neyi ölçtüğü anlatılsın. JSON: {"tagline":"en fazla 160 karakter tek cümle","problem":"en fazla 300 karakter","how":"en fazla 300 karakter","audience":"en fazla 160 karakter","steps":["3 kısa adım"],"benefits":[{"title":"3 kelimeyi geçmeyen başlık","text":"en fazla 140 karakter"}],"posts":{"x":"en fazla 240 karakter, emoji yok, tek paragraf","linkedin":"en fazla 600 karakter, 3 kısa paragraf"}}`,
+      `${baseSystem} Sen büyüme lideri Can'sın. Şirketin bugün yayına aldığı ürün için sade, abartısız Türkçe bir tanıtım sayfası metni yaz. Şapkalı harf kullanma. Sayfada satış vaadi değil, ne yaptığı ve neyi ölçtüğü anlatılsın. JSON: {"tagline":"8-160 karakter tek cümle","problem":"en fazla 300 karakter","how":"en fazla 300 karakter","audience":"en fazla 160 karakter","steps":["3 kısa adım"],"benefits":[{"title":"3 kelimeyi geçmeyen başlık","text":"en fazla 140 karakter"}],"posts":{"x":"en fazla 240 karakter, emoji yok, tek paragraf","linkedin":"en fazla 600 karakter, 3 kısa paragraf"}}`,
       {
         product: { title: product.title, field: product.field, customers: product.customers, price: product.price },
         strategy: {
@@ -3577,8 +3632,14 @@ ${current.finance?.crisisDays ? `<p style="font-size:14px;line-height:1.7;backgr
       "INSERT INTO visitor_work(id,date,created_at,data) VALUES(?,?,?,?)",
     ).run(record.id, date, record.createdAt, JSON.stringify(record));
     db.exec(
-      "DELETE FROM visitor_work WHERE id NOT IN (SELECT id FROM visitor_work ORDER BY created_at DESC LIMIT 300);" +
-        "DELETE FROM visitor_quota WHERE date < date('now','-3 day');",
+      "DELETE FROM visitor_work WHERE id NOT IN (SELECT id FROM visitor_work ORDER BY created_at DESC LIMIT 300);",
+    );
+    // Every date in this database is written from the engine's own clock, so the
+    // cleanup has to read the same one. SQLite's date('now') is the machine's
+    // wall clock: whenever the two disagree it deletes the rows that are still
+    // live and the once-a-day visitor cap quietly stops holding.
+    db.prepare("DELETE FROM visitor_quota WHERE date < ?").run(
+      localDate(new Date(now().getTime() - 3 * 86400000)),
     );
     return { work: record };
   }

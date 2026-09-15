@@ -1,0 +1,480 @@
+/* Generated from styles.css. Regenerate with tools/darken.py --site after editing styles.css. */
+
+.lp .button-dark, .legal-page .button-dark {
+  background: rgba(255,255,255,.055);
+}
+
+.lp .button-dark:hover, .legal-page .button-dark:hover {
+  background: rgba(255,255,255,.055);
+}
+
+.lp .button-dark > span, .legal-page .button-dark > span {
+  border-left: 1px solid rgba(239,236,227,.12);
+}
+
+.lp .button-outline, .legal-page .button-outline {
+  background: rgba(255,255,255,.045);
+}
+
+.lp .tag, .legal-page .tag {
+  background: rgba(255,255,255,.045);
+  color: #efece3;
+}
+
+.lp .tag.green, .legal-page .tag.green {
+  background: rgba(255,255,255,.045);
+  color: #efece3;
+}
+
+.lp .tag.red, .legal-page .tag.red {
+  background: rgba(255,255,255,.045);
+  color: #f7aa87;
+}
+
+.lp .tag.orange, .legal-page .tag.orange {
+  background: rgba(255,255,255,.045);
+  color: #e0b651;
+}
+
+.lp .panel-heading p, .legal-page .panel-heading p {
+  color: #94928a;
+}
+
+.lp .panel-link, .legal-page .panel-link {
+  color: #94928a;
+}
+
+.lp .markdown-preview, .legal-page .markdown-preview {
+  color: #efece3;
+}
+
+.lp .form-message, .legal-page .form-message {
+  background: rgba(255,255,255,.045);
+  color: #e0b181;
+}
+
+.lp .form-message.success, .legal-page .form-message.success {
+  background: rgba(255,255,255,.045);
+  color: #a3c56d;
+}
+
+.lp .empty, .legal-page .empty {
+  color: #94928a;
+}
+
+.lp .empty > span, .legal-page .empty > span {
+  background: rgba(255,255,255,.045);
+}
+
+.lp .muted, .legal-page .muted {
+  color: #94928a;
+}
+
+.lp-brand i {
+  color: #92cb63;
+}
+
+.lp-top {
+  background: rgba(255,255,255,.045);
+}
+
+.lp-nav {
+  color: #efece3;
+}
+
+.lp-cta {
+  background: rgba(255,255,255,.055);
+}
+
+.lp-cta:hover {
+  background: rgba(255,255,255,.055);
+}
+
+.lp-ghost {
+  border: 1px solid rgba(239,236,227,.12);
+}
+
+.lp-ghost:hover {
+  border-color: rgba(239,236,227,.12);
+}
+
+.lp-badge {
+  background: rgba(255,255,255,.045);
+  border: 1px solid rgba(239,236,227,.12);
+  color: #efece3;
+}
+
+.lp-hero h1 i {
+  color: #92cb63;
+}
+
+.lp-lead {
+  color: #efece3;
+}
+
+.lp-stat > span {
+  color: #94928a;
+}
+
+.lp-eyebrow {
+  color: #94928a;
+}
+
+.lp-sub {
+  color: #efece3;
+}
+
+.lp-steps span {
+  color: #94928a;
+}
+
+.lp-steps p {
+  color: #efece3;
+}
+
+.lp-dark {
+  background: rgba(255,255,255,.055);
+}
+
+.lp-file {
+  background: rgba(255,255,255,.055);
+  border: 1px solid rgba(239,236,227,.12);
+}
+
+.lp-person:hover {
+  border-color: rgba(239,236,227,.12);
+}
+
+.lp-team-foot {
+  color: #efece3;
+}
+
+.lp-brief-demo > span {
+  color: #94928a;
+}
+
+.lp-brief-demo li {
+  color: #efece3;
+}
+
+.lp-brief-demo svg {
+  color: #92cb63;
+}
+
+.lp-truth span.real {
+  color: #93ca6b;
+}
+
+.lp-links {
+  color: #efece3;
+}
+
+.lp .visitor-head p, .legal-page .visitor-head p {
+  color: #efece3;
+}
+
+.lp .visitor-error, .legal-page .visitor-error {
+  color: #ff9976;
+}
+
+.lp .visitor-tag, .legal-page .visitor-tag {
+  color: #94928a;
+}
+
+.lp .visitor-summary, .legal-page .visitor-summary {
+  color: #efece3;
+}
+
+.lp .visitor-notes > div, .legal-page .visitor-notes > div {
+  background: rgba(255,255,255,.045);
+}
+
+.lp .visitor-notes span, .legal-page .visitor-notes span {
+  color: #94928a;
+}
+
+.lp .visitor-deliverable, .legal-page .visitor-deliverable {
+  background: rgba(255,255,255,.045);
+}
+
+.lp .visitor-feed p, .legal-page .visitor-feed p {
+  color: #efece3;
+}
+
+.lp .visitor-feed span, .legal-page .visitor-feed span {
+  color: #94928a;
+}
+
+.lp-signup {
+  background: rgba(255,255,255,.045);
+}
+
+.lp .signup p, .legal-page .signup p {
+  color: #efece3;
+}
+
+.lp .signup small, .legal-page .signup small {
+  color: #efece3;
+}
+
+.lp .signup label, .legal-page .signup label {
+  color: #efece3;
+}
+
+.lp .signup input, .legal-page .signup input {
+  border: 1px solid rgba(239,236,227,.12);
+  background: rgba(255,255,255,.045);
+}
+
+.lp .signup-done, .legal-page .signup-done {
+  color: #efece3;
+}
+
+.lp .ledger th, .legal-page .ledger th {
+  color: #94928a;
+}
+
+.lp .ledger .pos, .legal-page .ledger .pos {
+  color: #85ce6e;
+}
+
+.lp .ledger .neg, .legal-page .ledger .neg {
+  color: #ff9976;
+}
+
+.lp .product-list article, .legal-page .product-list article {
+  background: rgba(255,255,255,.045);
+}
+
+.lp .product-list b, .legal-page .product-list b {
+  color: #8eca7c;
+}
+
+.lp .principle-list li, .legal-page .principle-list li {
+  border-left: 2px solid rgba(239,236,227,.12);
+}
+
+.lp .principle-list span, .legal-page .principle-list span {
+  color: #94928a;
+}
+
+.lp .finance-figures > div, .legal-page .finance-figures > div {
+  background: rgba(255,255,255,.045);
+}
+
+.lp .finance-figures .plus, .legal-page .finance-figures .plus {
+  color: #6ed478;
+}
+
+.lp .finance-figures .minus, .legal-page .finance-figures .minus {
+  color: #ffa54f;
+}
+
+.lp .finance-track, .legal-page .finance-track {
+  background: rgba(255,255,255,.045);
+}
+
+.lp .finance-crisis, .legal-page .finance-crisis {
+  border-color: rgba(239,236,227,.12);
+  background: rgba(255,255,255,.045);
+}
+
+.lp .finance-loans span, .legal-page .finance-loans span {
+  color: #efece3;
+  background: rgba(255,255,255,.045);
+}
+
+.legal-page p, .legal-page li {
+  color: #efece3;
+}
+
+.legal-back:hover, .legal-nav button:hover {
+  background: rgba(255,255,255,.045);
+}
+
+.legal-nav-active {
+  background: rgba(255,255,255,.045) !important;
+  border-color: rgba(239,236,227,.12) !important;
+}
+
+.legal-form input, .legal-form textarea {
+  background: rgba(255,255,255,.045);
+}
+
+.legal-form button {
+  background: rgba(255,255,255,.055);
+}
+
+.legal-error {
+  color: #ffa54f;
+}
+
+.legal-ok {
+  background: rgba(255,255,255,.045);
+}
+
+.lp-visitor-grid .visitor-form textarea {
+  background: rgba(255,255,255,.045);
+}
+
+.lp-launch:hover {
+  border-color: rgba(239,236,227,.12);
+}
+
+.lp-launch > span {
+  color: #94928a;
+}
+
+.lp-launch p {
+  color: #efece3;
+}
+
+/* --- by hand: what the generated map cannot know ------------------------- */
+/* Most of the product page paints itself from these four variables, so they are
+   the shortest route from paper to floor. */
+.lp,
+.legal-page {
+  --paper: #0a0b0e;
+  --white: rgba(255, 255, 255, 0.04);
+  --ink: #efece3;
+  --muted: #94928a;
+  --line: rgba(239, 236, 227, 0.12);
+  --green: #9cc97f;
+}
+/* The product page and the legal texts now stand on the same floor as the
+   panel, so the page itself has to be dark, not just the boxes on it. */
+body:has(.lp),
+body:has(.legal-page) {
+  background: #0a0b0e;
+}
+.lp,
+.legal-page {
+  color: #efece3;
+}
+.lp::before,
+.legal-page::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(120% 80% at 50% -10%, #171a21 0%, #0a0b0e 62%),
+    #0a0b0e;
+}
+.lp h1,
+.lp h2,
+.lp h3,
+.lp h4,
+.legal-page h1,
+.legal-page h2,
+.legal-page h3 {
+  color: #efece3;
+}
+.lp p,
+.legal-page p,
+.legal-page li {
+  color: #b3b1a9;
+}
+.lp strong,
+.lp b,
+.legal-page strong {
+  color: #efece3;
+}
+/* A primary button has to read as the one thing to press, so on a dark page it
+   inverts instead of blending into it. */
+.lp .button-dark,
+.legal-page .button-dark {
+  background: #efece3;
+  color: #0a0b0e;
+  border: 0;
+}
+.lp .button-dark:hover,
+.legal-page .button-dark:hover {
+  background: #ffffff;
+  color: #0a0b0e;
+}
+.lp .button-dark > span,
+.legal-page .button-dark > span {
+  border-left: 1px solid rgba(10, 11, 14, 0.18);
+}
+.lp .button,
+.lp .button-outline,
+.legal-page .button,
+.legal-page .button-outline {
+  border: 1px solid rgba(239, 236, 227, 0.16);
+  color: #efece3;
+}
+.lp .button:hover,
+.lp .button-outline:hover,
+.legal-page .button:hover,
+.legal-page .button-outline:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+/* The dark band inside the page used to be the only dark thing on it; now it is
+   the quiet one, marked by its edge instead of its fill. */
+.lp-dark {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(239, 236, 227, 0.12);
+}
+.lp input,
+.lp textarea,
+.legal-page input,
+.legal-page textarea {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(239, 236, 227, 0.14);
+  color: #efece3;
+}
+.lp input::placeholder,
+.legal-page input::placeholder {
+  color: #6d6b64;
+}
+/* Big figures on the product page follow the panel's display serif. */
+.lp-stat strong,
+.lp-stat b {
+  font-family: "Playfair Display", Georgia, serif;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* The sticky header sits over the page, so it is dark glass rather than paper. */
+.lp-top {
+  background: rgba(10, 11, 14, 0.82);
+  backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(239, 236, 227, 0.12);
+}
+.lp-nav a {
+  color: #94928a;
+}
+.lp-nav a:hover {
+  color: #efece3;
+}
+/* One button leads; it inverts so it is the only filled thing on the page. */
+.lp-cta {
+  background: #efece3;
+  color: #0a0b0e;
+}
+.lp-cta:hover {
+  background: #ffffff;
+  color: #0a0b0e;
+}
+.lp-ghost {
+  border: 1px solid rgba(239, 236, 227, 0.16);
+  color: #efece3;
+}
+.lp-ghost:hover {
+  border-color: rgba(239, 236, 227, 0.4);
+  background: rgba(255, 255, 255, 0.05);
+}
+.lp-badge {
+  background: rgba(156, 201, 127, 0.1);
+  border: 1px solid rgba(156, 201, 127, 0.28);
+  color: #9cc97f;
+}
+.lp-brand i,
+.lp-inline-link,
+.lp-links a {
+  color: #9cc97f;
+}
+.lp-eyebrow {
+  color: #6d6b64;
+}

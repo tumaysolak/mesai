@@ -1,5 +1,8 @@
-/* Generated from styles.css: the same panel, read on a dark floor.
-   Regenerate with tools/darken.py after editing styles.css. */
+/* Generated from styles.css. Regenerate with tools/darken.py after editing styles.css. */
+
+.app-shell .sidebar {
+  background: rgba(255,255,255,.055);
+}
 
 .app-shell .brand-subtitle {
   color: #94928a;
@@ -15,6 +18,10 @@
 
 .app-shell .nav-label {
   color: #94928a;
+}
+
+.app-shell .nav-item:hover {
+  background: rgba(255,255,255,.055);
 }
 
 .app-shell .nav-count {
@@ -50,6 +57,10 @@
   background: rgba(255,255,255,.045);
 }
 
+.app-shell .tiny-dot, .app-shell .status-dot {
+  background: rgba(255,255,255,.055);
+}
+
 .app-shell .icon-button:hover {
   background: rgba(255,255,255,.045);
 }
@@ -73,6 +84,14 @@
 
 .app-shell .heading-emphasis {
   color: #94928a;
+}
+
+.app-shell .button-dark {
+  background: rgba(255,255,255,.055);
+}
+
+.app-shell .button-dark:hover {
+  background: rgba(255,255,255,.055);
 }
 
 .app-shell .button-dark > span {
@@ -433,6 +452,10 @@
   color: #94928a;
 }
 
+.app-shell .modal-scrim {
+  background: rgba(255,255,255,.055);
+}
+
 .app-shell .modal {
   background: rgba(255,255,255,.045);
 }
@@ -563,6 +586,12 @@
 
 .app-shell .loading-bar i {
   background: rgba(165,189,111,.16);
+}
+
+@media (max-width: 760px) {
+  .app-shell .sidebar-backdrop {
+    background: rgba(255,255,255,.055);
+  }
 }
 
 .app-shell .decision-row-kicker {

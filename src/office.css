@@ -251,7 +251,18 @@ body:has(.app-shell) {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 372px;
   gap: 16px;
-  align-items: start;
+  align-items: stretch;
+}
+/* The slot takes the row height from the map next to it and the panel fills it
+   absolutely, so a long task list scrolls inside instead of stretching the row
+   and leaving the map short. */
+.ao-panel-slot {
+  position: relative;
+  min-width: 0;
+}
+.ao-panel-slot > .ao-panel {
+  position: absolute;
+  inset: 0;
 }
 .ao-office {
   min-width: 0;
@@ -659,7 +670,7 @@ body:has(.app-shell) {
   display: flex;
   flex-direction: column;
   gap: 13px;
-  max-height: 78vh;
+  min-height: 0;
 }
 .ao-composer {
   position: relative;
@@ -866,11 +877,14 @@ body:has(.app-shell) {
   color: #0a0b0e;
 }
 .ao-task-list {
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
   gap: 7px;
   overflow: auto;
   padding-right: 3px;
+  scrollbar-width: thin;
 }
 .ao-task {
   display: flex;
@@ -1112,13 +1126,83 @@ body:has(.app-shell) {
   padding: 6px 2px;
 }
 
+/* --- the office, full page ------------------------------------------------ */
+/* The drawing keeps its own proportions; the full page view only gives it the
+   whole screen and lets the panel grow with it. */
+.ao-shell.is-wide {
+  /* Rendered into the body, so it carries its own palette instead of
+     inheriting the panel shell's. */
+  --ink: #efece3;
+  --muted: #94928a;
+  --dim: #6d6b64;
+  --line: rgba(239, 236, 227, 0.12);
+  --surface: rgba(255, 255, 255, 0.035);
+  --surface-2: rgba(255, 255, 255, 0.06);
+  --amber: #e0ae55;
+  --alert: #e0674a;
+  --green: #79cf9c;
+  --serif: "Playfair Display", Georgia, serif;
+  font-family: Manrope, sans-serif;
+  color: var(--ink);
+  position: fixed;
+  inset: 0;
+  z-index: 58;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px clamp(12px, 2vw, 24px) clamp(12px, 2vw, 20px);
+  background:
+    radial-gradient(120% 90% at 50% -10%, #171a21 0%, #0a0b0e 62%),
+    #0a0b0e;
+  overflow: hidden;
+  animation: ao-fade 0.25s;
+}
+.ao-shell.is-wide .ao-top {
+  padding: 2px 2px 4px;
+}
+.ao-shell.is-wide .ao-wrap {
+  flex: 1;
+  min-height: 0;
+}
+.ao-shell.is-wide .ao-office,
+.ao-shell.is-wide .ao-map {
+  height: 100%;
+}
+.ao-shell.is-wide .ao-map {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+}
+.ao-shell.is-wide .ao-stage {
+  height: 100%;
+  width: auto;
+  max-width: 100%;
+  margin: 0 auto;
+}
+@media (max-width: 760px) {
+  .ao-shell.is-wide .ao-office {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  .ao-shell.is-wide .ao-map {
+    flex: 1;
+  }
+}
+
 /* --- responsive ---------------------------------------------------------- */
 @media (max-width: 1180px) {
   .ao-wrap {
     grid-template-columns: minmax(0, 1fr);
   }
-  .ao-panel {
-    max-height: 68vh;
+  .ao-panel-slot {
+    position: static;
+    min-height: 0;
+  }
+  .ao-panel-slot > .ao-panel {
+    position: static;
+    max-height: 72vh;
   }
 }
 @media (max-width: 760px) {
