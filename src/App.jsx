@@ -13,6 +13,8 @@ import {
   VisitorTask,
 } from "./Community.jsx";
 import Portrait from "./Portrait.jsx";
+import AgentsOffice, { DEPARTMENTS, deptOf } from "./Office.jsx";
+import TaskPanel, { TodayBoard } from "./TaskPanel.jsx";
 import {
   Activity,
   ArrowDown,
@@ -22,12 +24,14 @@ import {
   BrainCircuit,
   CalendarDays,
   Check,
+  Columns3,
   CheckCheck,
   ChevronRight,
   CircleCheck,
   Clock3,
   Code2,
   Coffee,
+  Database,
   Copy,
   Download,
   Eye,
@@ -41,6 +45,7 @@ import {
   LockKeyhole,
   LogOut,
   Maximize2,
+  Mail,
   Megaphone,
   Menu,
   Pause,
@@ -51,6 +56,7 @@ import {
   Search,
   ShieldCheck,
   Sparkles,
+  Server,
   Table2,
   Target,
   TrendingUp,
@@ -84,6 +90,15 @@ const typeLabel = (value) =>
     strategy: "Strateji",
     owner: "Kurucu talebi",
   })[value] || "Ürün deneyi";
+// What the shift actually runs on. These are the real services behind a
+// MESAI day, not decoration.
+const TOOLS = [
+  { id: "openai", label: "OpenAI · gpt-5-mini", icon: BrainCircuit },
+  { id: "resend", label: "Resend · mesai e-postaları", icon: Mail },
+  { id: "railway", label: "Railway · barındırma", icon: Server },
+  { id: "github", label: "GitHub · kaynak kod", icon: Code2 },
+  { id: "sqlite", label: "SQLite · kalıcı hafıza", icon: Database },
+];
 const NAV = [
   { id: "overview", label: "Genel bakış", icon: LayoutDashboard },
   { id: "team", label: "Ekip & karakterler", icon: Users },
@@ -213,40 +228,6 @@ function Modal({
   );
 }
 
-// The office keeps its own geometry; full screen only scales that drawing up,
-// so nothing inside it has to be re-measured or re-placed.
-const OFFICE_W = 930,
-  OFFICE_H = 400;
-
-function OfficeStage({ children }) {
-  const stage = useRef(null),
-    [scale, setScale] = useState(1);
-  useEffect(() => {
-    const node = stage.current;
-    if (!node || typeof ResizeObserver === "undefined") return;
-    const fit = () => {
-      const box = node.getBoundingClientRect();
-      if (!box.width || !box.height) return;
-      const room = Math.min(box.width / OFFICE_W, box.height / OFFICE_H);
-      setScale(room > 1 ? room : 1);
-    };
-    fit();
-    const observer = new ResizeObserver(fit);
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, []);
-  return (
-    <div className="office-stage" ref={stage}>
-      <div
-        className="office-stage-inner"
-        style={{ transform: `scale(${scale})` }}
-      >
-        {children}
-      </div>
-    </div>
-  );
-}
-
 function Empty({ icon: Icon = Coffee, title, text }) {
   return (
     <div className="empty">
@@ -272,173 +253,6 @@ function SectionHeading({ eyebrow, title, description, action }) {
 }
 function Tag({ children, tone = "" }) {
   return <span className={`tag ${tone}`}>{children}</span>;
-}
-
-// The floor plan is a real map: people walk to the room the current phase belongs to.
-const ZONES = {
-  meeting: { left: 8, right: 42, top: 56, bottom: 128 },
-  desk: { left: 56, right: 90, top: 56, bottom: 128 },
-  market: { left: 8, right: 42, top: 198, bottom: 266 },
-  social: { left: 56, right: 90, top: 198, bottom: 266 },
-  door: { left: 2, right: 15, top: 148, bottom: 188 },
-  home: { left: -12, right: -7, top: 150, bottom: 205 },
-};
-export function zoneFor(phase = "", status = "", index = 0) {
-  // A finished or not-yet-started shift means the desk is empty: resting
-  // people have gone home, they are not still sitting in the office.
-  if (status === "offline" || status === "resting") return "home";
-  if (/toplantı/.test(phase)) return "meeting";
-  if (/Fikirler/.test(phase)) return index % 4 === 0 ? "meeting" : "desk";
-  if (/kurulu/.test(phase)) return "meeting";
-  if (/Üretim/.test(phase)) return index % 3 === 0 ? "meeting" : "desk";
-  if (/Pazar/.test(phase)) return "market";
-  if (/Retrospektif/.test(phase)) return index % 4 === 3 ? "social" : "meeting";
-  // The morning starts at the corridor door, so the arrival is actually visible.
-  if (/hazırlanıyor/.test(phase)) return "door";
-  return ["desk", "social", "meeting", "market", "desk", "social", "meeting", "market"][
-    index % 8
-  ];
-}
-function seatIn(zone, index) {
-  const box = ZONES[zone] || ZONES.desk;
-  const column = index % 4;
-  const row = Math.floor(index / 4) % 2;
-  const drift = index >= 8 ? 4 : 0;
-  return {
-    left: `${box.left + ((box.right - box.left) / 3) * column + drift * 0.4}%`,
-    top: `${box.top + (box.bottom - box.top) * row + drift}px`,
-  };
-}
-
-function Office({ agents, activeId, openAgent, running = false, phase = "", day = 0 }) {
-  return (
-    <div className={`office ${running ? "office-running" : ""}`}>
-      <div className="office-wall">
-        <span>MESAI LABS</span>
-        <i></i>
-        <i></i>
-        <i></i>
-      </div>
-      <div className="room room-strategy">
-        <span className="room-label">
-          <GitFork size={11} /> KARAR ODASI
-        </span>
-        <div className="board">
-          <i />
-          <i />
-          <i />
-        </div>
-        <div className="meeting-table">
-          <span className="table-mark">
-            iyi fikirler
-            <br />
-            <b>birlikte büyür.</b>
-          </span>
-          <div className="table-paper" />
-          <div className="table-coffee" />
-        </div>
-      </div>
-      <div className="room room-product">
-        <span className="room-label">
-          <Code2 size={11} /> ÜRÜN STÜDYOSU
-        </span>
-        <div className="desk desk-one">
-          <div className="monitor" />
-          <div className="keyboard" />
-          <div className="desk-notebook" />
-        </div>
-        <div className="desk desk-two">
-          <div className="monitor" />
-          <div className="keyboard" />
-          <div className="desk-notebook" />
-        </div>
-      </div>
-      <div className="room room-growth">
-        <span className="room-label">
-          <TrendingUp size={11} /> BÜYÜME MASASI
-        </span>
-        <div className="growth-table">
-          <div className="growth-chart">
-            <i />
-            <i />
-            <i />
-            <i />
-          </div>
-          <div className="table-paper" />
-        </div>
-      </div>
-      <div className="room room-social">
-        <span className="room-label">
-          <Coffee size={11} /> FİKİR MOLASI
-        </span>
-        <div className="sofa sofa-one" />
-        <div className="sofa sofa-two" />
-        <div className="coffee-table">
-          <i />
-        </div>
-        <div className="rug" />
-      </div>
-      <div className="office-corridor">
-        <span>FİKİRLER BURADA İŞE DÖNÜŞÜR</span>
-        <ArrowRight size={14} />
-      </div>
-      <div className="plant plant-one">
-        <i />
-        <i />
-        <i />
-        <i />
-      </div>
-      <div className="plant plant-two">
-        <i />
-        <i />
-        <i />
-        <i />
-      </div>
-      <div className="plant plant-three">
-        <i />
-        <i />
-        <i />
-        <i />
-      </div>
-      {agents.slice(0, 16).map((agent, i) => {
-        const zone = zoneFor(phase, agent.status, i);
-        const fresh = day > 0 && agent.hiredDay === day;
-        return (
-          <button
-            key={agent.id}
-            style={{ ...seatIn(zone, i), animationDelay: `${(i % 7) * 0.35}s` }}
-            className={`office-person zone-${zone} ${activeId === agent.id ? "person-active" : ""} ${fresh ? "person-new" : ""}`}
-            onClick={() => openAgent(agent)}
-            aria-label={`${agent.name}, ${agent.role}. Karakteri incele`}
-          >
-            {activeId === agent.id && (
-              <span className="person-bubble">
-                <span />
-                <span />
-                <span />
-              </span>
-            )}
-            {fresh && <span className="person-badge">YENİ</span>}
-            <Portrait agent={agent} size={48} />
-            <span className="person-name">
-              {agent.name.split(" ")[0]}
-              <small>
-                {agent.role
-                  .replace("Chief Executive Officer", "CEO")
-                  .replace("Chief Technology Officer", "CTO")}
-              </small>
-            </span>
-          </button>
-        );
-      })}
-      {!agents.length && (
-        <div className="office-wait">Ekip ofise yerleşiyor…</div>
-      )}
-      <span className="office-hint">
-        <Eye size={12} /> Bir karaktere tıkla, hikâyesini keşfet
-      </span>
-    </div>
-  );
 }
 
 // The engine writes a proposal as one long line: title, numbered steps,
@@ -722,6 +536,8 @@ function Overview({
   nextText,
   clock,
   setOfficeOpen,
+  focus,
+  setFocus,
 }) {
   const { company, agents, runtime, tasks, artifacts, decisions, history } =
     data;
@@ -732,6 +548,7 @@ function Overview({
       (d) => d.status === "approved" || d.status === "completed",
     ) || decisions[0];
   const activeId = runtime.status === "running" ? events[0]?.agentId : null;
+  const pending = decisions.filter((d) => d.status === "pending").length;
   return (
     <>
       <SectionHeading
@@ -753,6 +570,73 @@ function Overview({
           </div>
         }
       />
+      <div className="ao-top">
+        <span className="ao-top-mark">
+          MESAİ OFİS<sup>V1</sup>
+        </span>
+        <span className={runtime.status === "running" ? "is-live" : ""}>
+          <span
+            className={`ao-live-dot ${runtime.status === "running" ? "" : "is-off"}`}
+          />{" "}
+          {runtime.status === "running" ? "MESAİ AÇIK" : "MESAİ KAPALI"}
+        </span>
+        <span className="ao-top-on">ÇALIŞTIĞI SERVİSLER</span>
+        <div className="ao-tools">
+          {TOOLS.map(({ id, label, icon: Icon }) => (
+            <span className="ao-tool" key={id} title={label}>
+              <Icon size={13} strokeWidth={2} />
+            </span>
+          ))}
+        </div>
+        <span className="ao-top-sep" />
+        {pending > 0 && (
+          <span className="ao-alert-pill">
+            <Info size={11} /> {pending} ONAY
+          </span>
+        )}
+        <button className="ao-board-open" onClick={() => setOfficeOpen(true)}>
+          <Columns3 size={12} /> BUGÜNÜN PANOSU
+        </button>
+        <span className="ao-clock">{clock}</span>
+      </div>
+      <div className="ao-wrap">
+        <AgentsOffice
+          agents={agents}
+          tasks={tasks}
+          artifacts={artifacts}
+          running={runtime.status === "running"}
+          activeId={activeId}
+          day={company.day}
+          openAgent={openAgent}
+          focus={focus}
+          setFocus={setFocus}
+        />
+        <TaskPanel
+          tasks={tasks}
+          decisions={decisions}
+          agents={agents}
+          focus={focus}
+          setFocus={setFocus}
+        />
+      </div>
+      <div className="ao-officefoot">
+        <span>
+          <span className="status-dot" />
+          {labelStatus(runtime.status)}
+        </span>
+        <span>
+          <Wallet size={13} /> Bordro <b>{money(company.payroll || 0)}</b> · mesai
+          başına
+        </span>
+        <span>
+          <Clock3 size={13} />{" "}
+          {runtime.status === "running" ? "Mesainin bitişine" : "Sonraki mesai"}{" "}
+          <b>{runtime.status === "paused" ? "duraklatıldı" : nextText}</b>
+        </span>
+        <span>
+          <Eye size={13} /> Bir bölüme tıkla, masalara yakınlaş
+        </span>
+      </div>
       <div className="metric-grid">
         <div className="metric">
           <span className="metric-label">
@@ -838,82 +722,23 @@ function Overview({
         </div>
       )}
       <Ledger entries={data.ledger || []} money={money} />
-      <section className="panel visitor-panel">
-        <VisitorTask compact />
+      <section className="panel activity-panel activity-wide">
+        <div className="panel-heading">
+          <div>
+            <h2>Ofisten haberler</h2>
+            <p>Karardan sonuca, adım adım</p>
+          </div>
+          <span
+            className={`broadcast ${runtime.status === "running" ? "is-live" : ""}`}
+          >
+            <Radio size={16} />
+          </span>
+        </div>
+        <EventFeed events={events} agents={agents} compact />
+        <button className="panel-link" onClick={() => navigate("activity")}>
+          Tüm hareketleri gör <ArrowRight size={14} />
+        </button>
       </section>
-      <div className="overview-grid">
-        <section className="panel office-panel">
-          <div className="panel-heading">
-            <div>
-              <h2>
-                Ofiste bugün{" "}
-                <span className="count-label">{agents.length} kişi</span>
-              </h2>
-              <p>
-                {runtime.status === "running"
-                  ? "Bir sonraki fikir burada şekilleniyor."
-                  : "Çalışma alanını ve ekibin hikâyelerini keşfet."}
-              </p>
-            </div>
-            <div className="panel-tools">
-              <Tag tone={runtime.status === "running" ? "green" : ""}>
-                <span className="tiny-dot" />
-                {runtime.status === "running" ? "Mesai açık" : "Ofis görünümü"}
-              </Tag>
-              <button
-                className="icon-button"
-                onClick={() => setOfficeOpen(true)}
-                aria-label="Ofisi tam ekran izle"
-                title="Ofisi tam ekran izle"
-              >
-                <Maximize2 size={16} />
-              </button>
-            </div>
-          </div>
-          <Office
-            agents={agents}
-            activeId={activeId}
-            openAgent={openAgent}
-            running={runtime.status === "running"}
-            phase={runtime.phase}
-            day={company.day}
-          />
-          <div className="office-bottom">
-            <span>
-              <span className="status-dot" />
-              {labelStatus(runtime.status)}
-            </span>
-            <span>
-              <Wallet size={13} /> Bordro <b>{money(company.payroll || 0)}</b> ·
-              mesai başına
-            </span>
-            <span>
-              <Clock3 size={13} />{" "}
-              {runtime.status === "running" ? "Mesainin bitişine" : "Sonraki mesai"}{" "}
-              <b>{runtime.status === "paused" ? "duraklatıldı" : nextText}</b>
-            </span>
-          </div>
-        </section>
-        <section className="panel activity-panel">
-          <div className="panel-heading">
-            <div>
-              <h2>Ofisten haberler</h2>
-              <p>
-                Karardan sonuca, adım adım
-              </p>
-            </div>
-            <span
-              className={`broadcast ${runtime.status === "running" ? "is-live" : ""}`}
-            >
-              <Radio size={16} />
-            </span>
-          </div>
-          <EventFeed events={events} agents={agents} compact />
-          <button className="panel-link" onClick={() => navigate("activity")}>
-            Tüm hareketleri gör <ArrowRight size={14} />
-          </button>
-        </section>
-      </div>
       <div className="second-grid">
         <section className="panel decision-spotlight">
           <div className="panel-heading">
@@ -2218,6 +2043,7 @@ export default function App() {
     [artifactModal, setArtifactModal] = useState(null),
     [decisionModal, setDecisionModal] = useState(null),
     [officeOpen, setOfficeOpen] = useState(false),
+    [focus, setFocus] = useState(null),
     [ownerOpen, setOwnerOpen] = useState(false);
   const [now, setNow] = useState(Date.now()),
     [clock, setClock] = useState("");
@@ -2608,6 +2434,8 @@ export default function App() {
                   clock={clock}
                   nextText={nextText}
                   setOfficeOpen={setOfficeOpen}
+                  focus={focus}
+                  setFocus={setFocus}
                 />
               )}
               {page === "team" && (
@@ -2705,31 +2533,13 @@ export default function App() {
         />
       )}
       {officeOpen && data && (
-        <Modal
-          title="MESAI Labs, kuş bakışı"
-          eyebrow="BİR KARAKTERE TIKLA, HİKÂYESİNİ KEŞFET"
+        <TodayBoard
+          tasks={data.tasks}
+          decisions={data.decisions}
+          agents={data.agents}
+          day={data.company.day}
           onClose={() => setOfficeOpen(false)}
-          wide
-          fullscreen
-        >
-          <OfficeStage>
-            <Office
-              agents={data.agents}
-              activeId={
-                data.runtime.status === "running"
-                  ? shownEvents[0]?.agentId
-                  : null
-              }
-              openAgent={(a) => {
-                setOfficeOpen(false);
-                setAgentModal(a);
-              }}
-              running={data.runtime.status === "running"}
-              phase={data.runtime.phase}
-              day={data.company.day}
-            />
-          </OfficeStage>
-        </Modal>
+        />
       )}
       {ownerOpen && data && (
         <OwnerModal

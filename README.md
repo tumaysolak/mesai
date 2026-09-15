@@ -138,6 +138,18 @@ Site dört hukuki sayfa yayınlar: `/gizlilik` (KVKK aydınlatma metni ve gizlil
 
 MIT. Ayrıntı için `LICENSE`.
 
+## Panel: MESAI Ofis
+
+Panelin ana ekranı, şirketin izometrik bir kat planıdır. Altı bölüm — Strateji, Ürün, Teknoloji, Finans, Büyüme, Operasyon — birer ada olarak durur; her ajan kendi bölümündeki masasında oturur. Kadro büyüdükçe masalar çoğalır, ada dolar.
+
+- **Bölüm kartı:** kişi sayısı, o bölümün ürettiği çıktı ve o mesainin aktif / sırada / biten iş sayısı. Mesai açıkken kart bölümün rengiyle parlar, masadaki ajanın üstünde yeşil bir nokta yanar.
+- **Ortak hafıza:** ortadaki düğüm, ekibin kalıcı belleğindeki öğrenim sayısıdır. Kesikli hatlar, mesainin çalıştığı servislerden (OpenAI, Resend, Railway, GitHub, SQLite) bölümlere iner.
+- **Yakınlaşma:** bir bölüme tıklayınca kamera o adaya iner, masaların üstünde rol ve isim etiketleri belirir; bir etikete tıklamak karakterin dosyasını açar. Sağ alttaki düğmeler yakınlaştırır, uzaklaştırır ve baştan görünüme döner; harita sürüklenebilir.
+- **Görev durumu:** sağdaki panel o anki işleri durumlarına göre listeler. Bir bölüm seçiliyken liste yalnızca o bölümü gösterir. Panelin üstündeki alan, ziyaretçinin ekibe iş vermesi içindir (günde bir kez).
+- **Bugünün panosu:** üst bardaki düğme, günün işlerini sırada / çalışılıyor / onay bekliyor / bitti sütunlarına ayıran tam ekran panoyu açar.
+
+Panel koyu temadır; ürün sayfası ve hukuki sayfalar açık temada kalır. Koyu tema `src/panel-dark.css` dosyasındadır ve `styles.css` üzerinden üretilir: `styles.css` değiştiğinde `python3 tools/darken.py` ile yeniden üretilmelidir.
+
 ## Mimari
 
 React + Vite, Express, Node'un SQLite modülü; harici veritabanı servisi gerektirmez. SQLite WAL, kalıcı mesai kilidi, işlemli kayıtlar ve AI yanıt önbelleği kullanılır. Panel dört saniyede bir güncellenir. Son durum sınırlı sayıda kaydı gösterir; eski çıktı ve geçmiş kayıtları veritabanında saklanır.

@@ -1,0 +1,959 @@
+/* Generated from styles.css: the same panel, read on a dark floor.
+   Regenerate with tools/darken.py after editing styles.css. */
+
+.app-shell .brand-subtitle {
+  color: #94928a;
+}
+
+.app-shell .workspace-switch {
+  border: 1px solid rgba(239,236,227,.12);
+}
+
+.app-shell .workspace-icon {
+  background: rgba(255,255,255,.07);
+}
+
+.app-shell .nav-label {
+  color: #94928a;
+}
+
+.app-shell .nav-count {
+  background: rgba(255,255,255,.045);
+}
+
+.app-shell .next-shift {
+  border: 1px solid rgba(239,236,227,.12);
+}
+
+.app-shell .shift-track {
+  background: rgba(255,255,255,.07);
+}
+
+.app-shell .founder {
+  border-top: 1px solid rgba(239,236,227,.12);
+}
+
+.app-shell .founder-avatar {
+  background: rgba(255,255,255,.045);
+  color: #efece3;
+}
+
+.app-shell .topbar {
+  background: rgba(255,255,255,.045);
+}
+
+.app-shell .breadcrumb strong {
+  color: #efece3;
+}
+
+.app-shell .observer-label {
+  background: rgba(255,255,255,.045);
+}
+
+.app-shell .icon-button:hover {
+  background: rgba(255,255,255,.045);
+}
+
+.app-shell .mode-strip {
+  color: #efece3;
+}
+
+.app-shell .mode-explanation {
+  border-left: 1px solid rgba(239,236,227,.12);
+  color: #94928a;
+}
+
+.app-shell .text-button:hover {
+  color: #97cc50;
+}
+
+.app-shell .eyebrow {
+  color: #94928a;
+}
+
+.app-shell .heading-emphasis {
+  color: #94928a;
+}
+
+.app-shell .button-dark > span {
+  border-left: 1px solid rgba(239,236,227,.12);
+}
+
+.app-shell .button-outline {
+  background: rgba(255,255,255,.045);
+}
+
+.app-shell .metric {
+  background: rgba(255,255,255,.045);
+}
+
+.app-shell .metric-label {
+  color: #efece3;
+}
+
+.app-shell .metric-symbol {
+  color: #94928a;
+}
+
+.app-shell .metric-value small {
+  color: #94928a;
+}
+
+.app-shell .metric-foot {
+  color: #94928a;
+}
+
+.app-shell .metric-learning {
+  background: rgba(255,255,255,.045);
+  border-color: rgba(239,236,227,.12);
+}
+
+.app-shell .tag {
+  background: rgba(255,255,255,.045);
+  color: #efece3;
+}
+
+.app-shell .tag.green {
+  background: rgba(255,255,255,.045);
+  color: #efece3;
+}
+
+.app-shell .tag.red {
+  background: rgba(255,255,255,.045);
+  color: #f7aa87;
+}
+
+.app-shell .tag.orange {
+  background: rgba(255,255,255,.045);
+  color: #e0b651;
+}
+
+.app-shell .panel-heading p {
+  color: #94928a;
+}
+
+.app-shell .count-label {
+  color: #94928a;
+  border: 1px solid rgba(239,236,227,.12);
+}
+
+.app-shell .broadcast {
+  color: #94928a;
+}
+
+.app-shell .is-live {
+  color: #97cb5b;
+}
+
+.app-shell .event-item {
+  border-top: 1px solid rgba(239,236,227,.12);
+}
+
+.app-shell .event-avatar > span {
+  background: rgba(255,255,255,.045);
+  color: #a3c66b;
+}
+
+.app-shell .event-meta time {
+  color: #94928a;
+}
+
+.app-shell .event-body p {
+  color: #94928a;
+}
+
+.app-shell .panel-link {
+  color: #94928a;
+}
+
+.app-shell .decision-spotlight-body p {
+  color: #94928a;
+}
+
+.app-shell .avatar-stack > span {
+  color: #94928a;
+}
+
+.app-shell .link {
+  color: #9cc772;
+}
+
+.app-shell .growth-number span {
+  color: #94928a;
+}
+
+.app-shell .chart-axis {
+  color: #94928a;
+}
+
+.app-shell .artifact-card {
+  background: rgba(255,255,255,.045);
+}
+
+.app-shell .artifact-cover {
+  background: rgba(255,255,255,.045);
+}
+
+.app-shell .type-markdown {
+  background: rgba(255,255,255,.045);
+}
+
+.app-shell .type-html {
+  background: rgba(255,255,255,.045);
+}
+
+.app-shell .type-csv {
+  background: rgba(255,255,255,.045);
+}
+
+.app-shell .artifact-extension {
+  color: #94928a;
+}
+
+.app-shell .file-drawing {
+  background: rgba(255,255,255,.045);
+  border: 1px solid rgba(239,236,227,.12);
+  box-shadow: 4px 6px rgba(255,255,255,.06);
+  color: #94928a;
+}
+
+.app-shell .file-drawing i {
+  background: rgba(255,255,255,.045);
+}
+
+.app-shell .artifact-open {
+  background: rgba(255,255,255,.045);
+}
+
+.app-shell .artifact-kicker {
+  color: #94928a;
+}
+
+.app-shell .artifact-info > p {
+  color: #94928a;
+}
+
+.app-shell .artifact-footer {
+  border-top: 1px solid rgba(239,236,227,.12);
+  color: #94928a;
+}
+
+.app-shell .experiment-note {
+  border: 1px solid rgba(239,236,227,.12);
+  background: rgba(255,255,255,.045);
+}
+
+.app-shell .experiment-note p {
+  color: #94928a;
+}
+
+.app-shell .experiment-note strong {
+  color: #efece3;
+}
+
+.app-shell .page-footer {
+  border-top: 1px solid rgba(239,236,227,.12);
+  color: #94928a;
+}
+
+.app-shell .page-footer > span:first-child {
+  color: #efece3;
+}
+
+.app-shell .page-footer > span:first-child span {
+  color: #94928a;
+}
+
+.app-shell .footer-flower {
+  color: #94928a;
+}
+
+.app-shell .filter {
+  background: rgba(255,255,255,.045);
+}
+
+.app-shell .filter span {
+  color: #94928a;
+}
+
+.app-shell .filter.active {
+  background: rgba(220,233,185,.16);
+  border-color: rgba(239,236,227,.12);
+}
+
+.app-shell .team-card {
+  background: rgba(255,255,255,.045);
+}
+
+.app-shell .team-card-cover {
+  background: rgba(255,255,255,.045);
+}
+
+.app-shell .team-cover-1 {
+  background: rgba(255,255,255,.045);
+}
+
+.app-shell .team-cover-2 {
+  background: rgba(255,255,255,.045);
+}
+
+.app-shell .team-cover-3 {
+  background: rgba(255,255,255,.045);
+}
+
+.app-shell .team-level {
+  border: 1px solid rgba(239,236,227,.12);
+  color: #94928a;
+}
+
+.app-shell .team-arrow {
+  color: #94928a;
+}
+
+.app-shell .team-card-body > p {
+  color: #94928a;
+}
+
+.app-shell .team-energy {
+  color: #94928a;
+}
+
+.app-shell .meter {
+  background: rgba(255,255,255,.045);
+}
+
+.app-shell .meter i {
+  background: rgba(173,196,126,.16);
+}
+
+.app-shell .team-card-foot {
+  color: #94928a;
+}
+
+.app-shell :is(.decision-card, .app-shell .decision-row) {
+  background: rgba(255,255,255,.045);
+}
+
+.app-shell :is(.decision-card, .app-shell .decision-row):hover {
+  border-color: rgba(239,236,227,.12);
+}
+
+.app-shell :is(.decision-card, .app-shell .decision-row) p {
+  color: #94928a;
+}
+
+.app-shell .decision-card-foot, .app-shell .decision-card-meta, .app-shell .decision-meta {
+  color: #94928a;
+}
+
+.app-shell .decision-day {
+  color: #94928a;
+}
+
+.app-shell .kanban-column {
+  background: rgba(255,255,255,.045);
+}
+
+.app-shell .task-card {
+  background: rgba(255,255,255,.045);
+  border: 1px solid rgba(239,236,227,.12);
+}
+
+.app-shell .task-card p {
+  color: #94928a;
+}
+
+.app-shell .task-footer, .app-shell .task-owner {
+  color: #94928a;
+}
+
+.app-shell .task-top {
+  color: #94928a;
+}
+
+.app-shell .learning-hero, .app-shell .learning-summary {
+  background: rgba(255,255,255,.045);
+  border: 1px solid rgba(239,236,227,.12);
+}
+
+.app-shell .learning-hero p, .app-shell .learning-summary p {
+  color: #94928a;
+}
+
+.app-shell .experiment-card {
+  background: rgba(255,255,255,.045);
+}
+
+.app-shell .experiment-card p {
+  color: #94928a;
+}
+
+.app-shell .experiment-card .experiment-result {
+  background: rgba(255,255,255,.045);
+}
+
+.app-shell :is(.memory-card, .app-shell .memory-row) {
+  background: rgba(255,255,255,.045);
+}
+
+.app-shell :is(.memory-card, .app-shell .memory-row) span {
+  color: #94928a;
+}
+
+.app-shell :is(.memory-card, .app-shell .memory-row) p {
+  color: #94928a;
+}
+
+.app-shell .achievement {
+  background: rgba(255,255,255,.045);
+}
+
+.app-shell .achievement.unlocked {
+  background: rgba(255,255,255,.045);
+  border-color: rgba(239,236,227,.12);
+}
+
+.app-shell .achievement p {
+  color: #94928a;
+}
+
+.app-shell .about-manifesto {
+  background: rgba(255,255,255,.045);
+}
+
+.app-shell .about-manifesto p {
+  color: #efece3;
+}
+
+.app-shell .about-panel p {
+  color: #94928a;
+}
+
+.app-shell .about-credit {
+  color: #94928a;
+}
+
+.app-shell .modal {
+  background: rgba(255,255,255,.045);
+}
+
+.app-shell .persona-hero strong span {
+  color: #94928a;
+}
+
+.app-shell .persona-label {
+  color: #94928a;
+  background: rgba(255,255,255,.045);
+}
+
+.app-shell .persona-drivers > div {
+  background: rgba(255,255,255,.045);
+}
+
+.app-shell .persona-drivers p {
+  color: #94928a;
+}
+
+.app-shell .persona-bars span {
+  color: #94928a;
+}
+
+.app-shell .persona-memory p {
+  color: #94928a;
+}
+
+.app-shell .decision-modal-summary p {
+  color: #94928a;
+}
+
+.app-shell .rationale {
+  background: rgba(255,255,255,.045);
+}
+
+.app-shell .rationale p {
+  color: #94928a;
+}
+
+.app-shell .decision-impact p {
+  color: #94928a;
+}
+
+.app-shell .vote-row strong span {
+  color: #94928a;
+}
+
+.app-shell .vote-row p {
+  color: #94928a;
+}
+
+.app-shell .artifact-modal-toolbar p {
+  color: #94928a;
+}
+
+.app-shell .artifact-preview {
+  background: rgba(255,255,255,.045);
+}
+
+.app-shell .markdown-preview {
+  color: #efece3;
+}
+
+.app-shell .preview-note {
+  color: #94928a;
+}
+
+.app-shell .owner-form > p {
+  color: #94928a;
+}
+
+.app-shell .owner-form input {
+  border: 1px solid rgba(239,236,227,.12);
+  background: rgba(255,255,255,.045);
+  color: #efece3;
+}
+
+.app-shell .owner-note {
+  color: #94928a;
+}
+
+.app-shell .owner-verified {
+  background: rgba(255,255,255,.045);
+  color: #9fc673;
+}
+
+.app-shell .form-message, .app-shell .connection-error, .app-shell .runtime-warning {
+  background: rgba(255,255,255,.045);
+  color: #e0b181;
+}
+
+.app-shell .form-message.success {
+  background: rgba(255,255,255,.045);
+  color: #a3c56d;
+}
+
+.app-shell .replay-strip {
+  background: rgba(255,255,255,.045);
+  border: 1px solid rgba(239,236,227,.12);
+  color: #94928a;
+}
+
+.app-shell .replay-strip > span > span {
+  color: #94928a;
+}
+
+.app-shell .empty {
+  color: #94928a;
+}
+
+.app-shell .empty > span {
+  background: rgba(255,255,255,.045);
+}
+
+.app-shell .muted {
+  color: #94928a;
+}
+
+.app-shell .loading-screen p {
+  color: #94928a;
+}
+
+.app-shell .loading-bar {
+  background: rgba(255,255,255,.045);
+}
+
+.app-shell .loading-bar i {
+  background: rgba(165,189,111,.16);
+}
+
+.app-shell .decision-row-kicker {
+  color: #94928a;
+}
+
+.app-shell .decision-row .decision-icon {
+  background: rgba(255,255,255,.045);
+}
+
+.app-shell .decision-row .decision-icon.rejected {
+  background: rgba(255,255,255,.045);
+  color: #94928a;
+}
+
+.app-shell .decision-row > svg {
+  color: #94928a;
+}
+
+.app-shell .decision-vote-summary {
+  color: #94928a;
+}
+
+.app-shell .search-field {
+  background: rgba(255,255,255,.045);
+  color: #94928a;
+}
+
+.app-shell .search-field input {
+  color: #efece3;
+}
+
+.app-shell .task-kicker {
+  color: #94928a;
+}
+
+.app-shell .task-progress {
+  color: #94928a;
+}
+
+.app-shell .kanban-empty {
+  color: #94928a;
+}
+
+.app-shell .kanban-heading > span {
+  color: #94928a;
+}
+
+.app-shell .learning-summary > div > span {
+  color: #94928a;
+}
+
+.app-shell .experiment-result > span {
+  color: #94928a;
+}
+
+.app-shell .experiment-result strong {
+  color: #efece3;
+}
+
+.app-shell .memory-meta {
+  color: #94928a;
+}
+
+.app-shell .memory-meta > span {
+  color: #94928a;
+}
+
+.app-shell .payroll-bar {
+  background: rgba(255,255,255,.045);
+}
+
+.app-shell .payroll-bar span {
+  color: #94928a;
+}
+
+.app-shell .payroll-bar small {
+  color: #94928a;
+}
+
+.app-shell .team-badge {
+  background: rgba(213,154,60,.16);
+}
+
+.app-shell .team-salary {
+  background: rgba(255,255,255,.045);
+}
+
+.app-shell .team-salary span {
+  color: #94928a;
+}
+
+.app-shell .team-salary i {
+  color: #9bc86e;
+}
+
+.app-shell /* --- Brand mark: the product name is MES + AI --- */
+.brand-ai {
+  color: #92cb63;
+}
+
+.app-shell a.lp-file:hover {
+  border-color: rgba(127,162,95,.45);
+}
+
+.app-shell /* --- Live header, .app-shell visitor work, .app-shell mailing list, .app-shell day end ledger --- */
+.live-pill {
+  background: rgba(255,255,255,.045);
+  border: 1px solid rgba(239,236,227,.12);
+  color: #efece3;
+}
+
+.app-shell .visitor-head p {
+  color: #efece3;
+}
+
+.app-shell .visitor-error {
+  color: #ff9976;
+}
+
+.app-shell .visitor-tag {
+  color: #94928a;
+}
+
+.app-shell .visitor-summary {
+  color: #efece3;
+}
+
+.app-shell .visitor-notes > div {
+  background: rgba(255,255,255,.045);
+}
+
+.app-shell .visitor-notes span {
+  color: #94928a;
+}
+
+.app-shell .visitor-deliverable {
+  background: rgba(255,255,255,.045);
+}
+
+.app-shell .visitor-feed p {
+  color: #efece3;
+}
+
+.app-shell .visitor-feed span {
+  color: #94928a;
+}
+
+.app-shell .signup p {
+  color: #efece3;
+}
+
+.app-shell .signup small {
+  color: #efece3;
+}
+
+.app-shell .signup label {
+  color: #efece3;
+}
+
+.app-shell .signup input {
+  border: 1px solid rgba(239,236,227,.12);
+  background: rgba(255,255,255,.045);
+}
+
+.app-shell .signup-done {
+  color: #efece3;
+}
+
+.app-shell .ledger th {
+  color: #94928a;
+}
+
+.app-shell .ledger .pos {
+  color: #85ce6e;
+}
+
+.app-shell .ledger .neg {
+  color: #ff9976;
+}
+
+.app-shell /* --- Organic company: conditions, .app-shell product line, .app-shell principles --- */
+.world-strip {
+  background: rgba(255,255,255,.045);
+  border: 1px solid rgba(239,236,227,.12);
+}
+
+.app-shell .world-strip > span {
+  color: #a9c184;
+}
+
+.app-shell .world-strip p {
+  color: #efece3;
+}
+
+.app-shell .product-list article {
+  background: rgba(255,255,255,.045);
+}
+
+.app-shell .product-list b {
+  color: #8eca7c;
+}
+
+.app-shell .product-retired b {
+  color: #ff9976;
+}
+
+.app-shell .principle-list li {
+  border-left: 2px solid rgba(239,236,227,.12);
+}
+
+.app-shell .principle-list span {
+  color: #94928a;
+}
+
+.app-shell .report-row:hover {
+  background: rgba(255,255,255,.045);
+}
+
+.app-shell .report-row-active {
+  background: rgba(255,255,255,.045);
+  border-color: rgba(239,236,227,.12);
+}
+
+.app-shell .report-row small {
+  color: #efece3;
+}
+
+.app-shell .report-row em.ok {
+  color: #6ed478;
+}
+
+.app-shell .report-row em.no {
+  color: #ffa54f;
+}
+
+.app-shell .report-row em.live {
+  color: #efece3;
+}
+
+.app-shell .report-plan td {
+  color: #efece3;
+}
+
+.app-shell .report-figures > div {
+  background: rgba(255,255,255,.045);
+}
+
+.app-shell .report-figures .plus {
+  color: #6ed478;
+}
+
+.app-shell .report-figures .minus {
+  color: #ffa54f;
+}
+
+.app-shell .report-lesson {
+  background: rgba(255,255,255,.045);
+}
+
+.app-shell .report-error {
+  background: rgba(255,255,255,.045);
+  border: 1px solid rgba(239,236,227,.12);
+}
+
+.app-shell .report-file:hover {
+  background: rgba(255,255,255,.045);
+}
+
+.app-shell .finance-figures > div {
+  background: rgba(255,255,255,.045);
+}
+
+.app-shell .finance-figures .plus {
+  color: #6ed478;
+}
+
+.app-shell .finance-figures .minus {
+  color: #ffa54f;
+}
+
+.app-shell .finance-track {
+  background: rgba(255,255,255,.045);
+}
+
+.app-shell .finance-crisis {
+  border-color: rgba(239,236,227,.12);
+  background: rgba(255,255,255,.045);
+}
+
+.app-shell .finance-loans span {
+  color: #efece3;
+  background: rgba(255,255,255,.045);
+}
+
+.app-shell .report-crisis {
+  background: rgba(255,255,255,.045);
+  border: 1px solid rgba(239,236,227,.12);
+}
+
+.app-shell /* ---- Panel giris kapisi */
+.gate {
+  background: radial-gradient(120% 90% at 50% 0%, rgba(255,255,255,.045) 0%, var(--paper) 55%);
+}
+
+.app-shell .guest-head {
+  background: rgba(255,255,255,.045);
+}
+
+.app-shell .guest-row b {
+  color: #6ed478;
+}
+
+.app-shell .site-list article p {
+  color: #efece3;
+}
+
+.app-shell .site-list a:hover {
+  background: rgba(255,255,255,.045);
+}
+
+.app-shell /* One long engine line, .app-shell laid out as a title, .app-shell its steps and its caveats. */
+.event-title {
+  color: #efece3;
+}
+
+.app-shell .event-tag {
+  background: rgba(255,255,255,.045);
+  color: #94928a;
+}
+
+.app-shell .event-steps li {
+  color: #94928a;
+}
+
+.app-shell .event-source {
+  border: 1px solid rgba(239,236,227,.12);
+  color: #9ec583;
+}
+
+.app-shell .score-grid > div {
+  background: rgba(255,255,255,.045);
+}
+
+.app-shell .score-label {
+  color: #94928a;
+}
+
+.app-shell .score-grid strong {
+  color: #efece3;
+}
+
+.app-shell .score-grid strong small {
+  color: #94928a;
+}
+
+.app-shell .score-grid p {
+  color: #94928a;
+}
+
+.app-shell .score-days li {
+  background: rgba(255,255,255,.045);
+  color: #94928a;
+}
+
+.app-shell .score-days li.score-hit {
+  background: rgba(255,255,255,.045);
+  border-color: rgba(239,236,227,.12);
+  color: #88cf62;
+}
+
+.app-shell .score-days li.score-miss {
+  background: rgba(255,255,255,.045);
+  border-color: rgba(239,236,227,.12);
+  color: #ff9976;
+}
+
+.app-shell /* Reports carry real tables; they get to look like tables. */
+.md-table-wrap {
+  background: rgba(255,255,255,.045);
+}
+
+.app-shell .md-table th {
+  color: #94928a;
+  background: rgba(255,255,255,.045);
+}
+
+.app-shell .md-table td:last-child {
+  color: #94928a;
+}
+
+.app-shell .md-table td:nth-child(3) {
+  color: #efece3;
+}
