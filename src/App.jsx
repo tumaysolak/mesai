@@ -14,7 +14,8 @@ import {
   VisitorTask,
 } from "./Community.jsx";
 import Portrait from "./Portrait.jsx";
-import AgentsOffice, { DEPARTMENTS, deptOf } from "./Office.jsx";
+import { DEPARTMENTS, deptOf } from "./Office.jsx";
+import HQ from "./HQ.jsx";
 import TaskPanel, { TodayBoard } from "./TaskPanel.jsx";
 import {
   Activity,
@@ -559,67 +560,18 @@ function Overview({
   // rendered into the body instead of in place. React keeps it the same element
   // either way, so the camera and the focus survive the move.
   const office = (
-    <div className={`ao-shell ${wide ? "is-wide" : ""}`}>
-      <div className="ao-top">
-        <span className="ao-top-mark">
-          MESAİ OFİS<sup>V1</sup>
-        </span>
-        <span className={runtime.status === "running" ? "is-live" : ""}>
-          <span
-            className={`ao-live-dot ${runtime.status === "running" ? "" : "is-off"}`}
-          />{" "}
-          {runtime.status === "running" ? "MESAİ AÇIK" : "MESAİ KAPALI"}
-        </span>
-        <span className="ao-top-on">ÇALIŞTIĞI SERVİSLER</span>
-        <div className="ao-tools">
-          {TOOLS.map(({ id, label, icon: Icon }) => (
-            <span className="ao-tool" key={id} title={label}>
-              <Icon size={13} strokeWidth={2} />
-            </span>
-          ))}
-        </div>
-        <span className="ao-top-sep" />
-        {pending > 0 && (
-          <span className="ao-alert-pill">
-            <Info size={11} /> {pending} ONAY
-          </span>
-        )}
-        <button className="ao-board-open" onClick={() => setOfficeOpen(true)}>
-          <Columns3 size={12} /> BUGÜNÜN PANOSU
-        </button>
-        <button
-          className="ao-board-open"
-          onClick={() => setWide(!wide)}
-          title={wide ? "Tam sayfadan çık (Esc)" : "Ofisi tam sayfa aç"}
-        >
-          {wide ? <Minimize2 size={12} /> : <Maximize2 size={12} />}
-          {wide ? "ÇIK" : "TAM SAYFA"}
-        </button>
-        <span className="ao-clock">{clock}</span>
-      </div>
-      <div className="ao-wrap">
-        <AgentsOffice
-          agents={agents}
-          tasks={tasks}
-          artifacts={artifacts}
-          running={runtime.status === "running"}
-          activeId={activeId}
-          day={company.day}
-          openAgent={openAgent}
-          focus={focus}
-          setFocus={setFocus}
-        />
-        <div className="ao-panel-slot">
-          <TaskPanel
-            tasks={tasks}
-            decisions={decisions}
-            agents={agents}
-            focus={focus}
-            setFocus={setFocus}
-          />
-        </div>
-      </div>
-    </div>
+    <HQ
+      data={data}
+      events={events}
+      clock={clock}
+      focus={focus}
+      setFocus={setFocus}
+      openAgent={openAgent}
+      openDecision={openDecision}
+      wide={wide}
+      setWide={setWide}
+      setBoardOpen={setOfficeOpen}
+    />
   );
   return (
     <>
@@ -658,7 +610,7 @@ function Overview({
           <b>{runtime.status === "paused" ? "duraklatıldı" : nextText}</b>
         </span>
         <span>
-          <Eye size={13} /> Bir bölüme tıkla, masalara yakınlaş
+          <Eye size={13} /> Bir odaya ya da kediye tıkla, yakınlaş
         </span>
       </div>
       <div className="metric-grid">

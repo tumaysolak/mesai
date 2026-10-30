@@ -138,17 +138,20 @@ Site dört hukuki sayfa yayınlar: `/gizlilik` (KVKK aydınlatma metni ve gizlil
 
 MIT. Ayrıntı için `LICENSE`.
 
-## Panel: MESAI Ofis
+## Panel: MESAI HQ
 
-Panelin ana ekranı, şirketin izometrik bir kat planıdır. Altı bölüm — Strateji, Ürün, Teknoloji, Finans, Büyüme, Operasyon — birer ada olarak durur; her ajan kendi bölümündeki masasında oturur. Kadro büyüdükçe masalar çoğalır, ada dolar.
+Panelin ana ekranı, şirketin üç boyutlu küçük bir maketidir (three.js). Krem bir zeminin üstünde altı oda durur: Strateji, Ürün, Teknoloji, Finans, Büyüme, Operasyon. Her ajan kendi odasındaki masada oturan bir ofis kedisidir; kürkü persona görünümüne bağlıdır, tasmasının rengi personanın rengidir. Kadro büyüdükçe odaya masa eklenir.
 
-- **Bölüm kartı:** kişi sayısı, o bölümün ürettiği çıktı ve o mesainin aktif / sırada / biten iş sayısı. Mesai açıkken kart bölümün rengiyle parlar, masadaki ajanın üstünde yeşil bir nokta yanar.
-- **Ortak hafıza:** ortadaki düğüm, ekibin kalıcı belleğindeki öğrenim sayısıdır. Kesikli hatlar, mesainin çalıştığı servislerden (OpenAI, Resend, Railway, GitHub, SQLite) bölümlere iner.
-- **Yakınlaşma:** bir bölüme tıklayınca kamera o adaya iner, masaların üstünde rol ve isim etiketleri belirir; bir etikete tıklamak karakterin dosyasını açar. Sağ alttaki düğmeler yakınlaştırır, uzaklaştırır ve baştan görünüme döner; harita sürüklenebilir.
-- **Görev durumu:** sağdaki panel o anki işleri durumlarına göre listeler. Bir bölüm seçiliyken liste yalnızca o bölümü gösterir. Panelin üstündeki alan, ziyaretçinin ekibe iş vermesi içindir (günde bir kez).
-- **Bugünün panosu:** üst bardaki düğme, günün işlerini sırada / çalışılıyor / onay bekliyor / bitti sütunlarına ayıran tam ekran panoyu açar.
+- **Uyku ve mesai:** mesai kapalıyken bütün kediler masasında uyur, başlarının üstünde "zzz" yükselir ve dizüstü ekranları kapalıdır. Uyuyan ajan model çağrısı yapmaz. 08.00'de mesai açılınca sırası gelen uyanır, ekranı yanar, yazmaya başlar.
+- **Toplantı:** 08.15 günlük toplantı, 11.00 yönetim kurulu ve 17.00 retrospektif aşamalarında kediler masalarından kalkıp koridordaki yuvarlak masanın çevresinde toplanır, aşama bitince yerlerine döner.
+- **Konuşma balonu:** akışa yeni bir kayıt düştüğünde o ajanın başının üstünde birkaç saniye bir balon belirir.
+- **Odalar:** her odanın zemininde adı ve "kaç ajan, kaç çalışıyor" satırı, köşesinde o günün AKTİF / SIRA / BİTTİ sayılarını gösteren bir beyaz tahta vardır. Odaya tıklayınca kamera odaya iner, sağda oda çekmecesi açılır.
+- **Ajan çekmecesi:** bir kediye ya da etiketine tıklamak kamerayı ona yaklaştırır ve görevini, şu an ne yaptığını, enerji ve moralini, yeteneklerini ve hafızasındaki son dersleri gösterir.
+- **Sağ sütun:** "Kurul soruyor" kartı oy bekleyen kararları (yoksa son kararı) evet/hayır dağılımıyla gösterir; altında "Ajanların az önce yaptıkları" akışı canlı akar.
+- **Komut çubuğu:** alttaki alan ziyaretçinin ekibe günde bir iş vermesi içindir; bir oda seçiliyse iş o bölüme gider.
+- **Sekmeler:** Ofis, Odalar (her bölüm bir kart, uyuyan ve çalışan kediler), Hafıza (ajan başına dersler ve şirketin kendi ilkeleri), Maliyet (bugünkü model çağrısı, token ve tahmini harcama; simülasyon parası ayrı gösterilir).
 
-Ofis görünümü **tam sayfa** da açılabilir: üst bardaki düğme haritayı ve görev panelini bütün ekrana yayar, `Esc` kapatır. Sayfanın kendi yığın bağlamı `position: fixed`i hapsettiği için bu görünüm `body`ye portal ile basılır ve kendi renk değişkenlerini taşır.
+Kamera sürüklenerek kaydırılır, tekerlekle yakınlaşır, sınırlı bir açıyla döner; "Genel bakış" düğmesi ve `Esc` başa döndürür. Tam sayfa düğmesi ofisi bütün ekrana açar. three.js yalnız panel açıldığında yüklenir, ürün sayfası etkilenmez. Tarayıcı WebGL desteklemiyorsa eski düz izometrik ofis (`Office.jsx`) gösterilir.
 
 Sitenin tamamı koyu temadır. Koyu tema `styles.css` üzerinden üretilir: panel için `src/panel-dark.css`, ürün ve hukuki sayfalar için `src/site-dark.css`. `styles.css` değiştiğinde ikisi de yeniden üretilmelidir:
 
