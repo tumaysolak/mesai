@@ -1344,3 +1344,45 @@ test("the scorecard scores the price the team actually chose", () => {
   assert.ok(misses > 0);
   assert.equal(scorePricing({ ...inputs, seed: "x", scenarios: [] }), null);
 });
+
+test("an OpenAI-compatible endpoint (Ollama) drives the council with chat completions and costs nothing", async (t) => {
+  const calls = [];
+  const responsesMock = aiMock([]);
+  const engine = engineFor(t, {
+    apiKey: secret,
+    llmBaseUrl: "https://ollama.example.test/v1/",
+    model: "gemma4:26b",
+    dailyCallLimit: 24,
+    fetchImpl: async (url, options) => {
+      const body = JSON.parse(options.body);
+      calls.push({ url, body, headers: options.headers });
+      const translated = await responsesMock("https://api.openai.com/v1/responses", {
+        ...options,
+        body: JSON.stringify({ input: body.messages }),
+      });
+      const payload = await translated.json();
+      const text =
+        payload.output_text ||
+        (payload.output || []).flatMap((item) => item.content || []).map((item) => item.text).join("");
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          choices: [{ message: { role: "assistant", content: "```json\n" + text + "\n```" } }],
+          usage: { prompt_tokens: 100, completion_tokens: 50 },
+        }),
+      };
+    },
+  });
+  await engine.run({ key: "compat-1" });
+  assert.ok(calls.length >= 10, `beklenmeyen çağrı: ${calls.length}`);
+  assert.equal(engine.state().runtime.mode, "ai");
+  assert.match(engine.state().runtime.provider, /^Ollama · gemma4:26b/);
+  for (const call of calls) {
+    assert.equal(call.url, "https://ollama.example.test/v1/chat/completions");
+    assert.equal(call.body.model, "gemma4:26b");
+    assert.deepEqual(call.body.response_format, { type: "json_object" });
+    assert.equal(call.headers.Authorization, `Bearer ${secret}`);
+  }
+  assert.doesNotMatch(JSON.stringify(engine.state()), new RegExp(secret));
+});

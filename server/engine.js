@@ -20,8 +20,13 @@ const clone = (o) => JSON.parse(JSON.stringify(o));
 const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 export const RETAINER = 180;
 // gpt-5-mini list price per million tokens; override if the model changes.
-export const PRICE_INPUT = Number(process.env.AI_PRICE_INPUT_PER_M) || 0.25;
-export const PRICE_OUTPUT = Number(process.env.AI_PRICE_OUTPUT_PER_M) || 2;
+// A local model costs nothing per token, so an explicit 0 must be honoured.
+const envNumber = (key, fallback) => {
+  const raw = process.env[key];
+  return raw !== undefined && raw !== "" && Number.isFinite(Number(raw)) ? Number(raw) : fallback;
+};
+export const PRICE_INPUT = envNumber("AI_PRICE_INPUT_PER_M", 0.25);
+export const PRICE_OUTPUT = envNumber("AI_PRICE_OUTPUT_PER_M", 2);
 export function estimateCost({ input = 0, output = 0 }) {
   return (
     Math.round(
@@ -1096,8 +1101,22 @@ export function createEngine(options = {}) {
     0,
     25000,
   );
-  const apiKey = options.apiKey ?? process.env.OPENAI_API_KEY ?? "";
-  const model = options.model || process.env.OPENAI_MODEL || "gpt-5-mini";
+  // LLM_BASE_URL switches the engine to any OpenAI-compatible chat endpoint
+  // (for example a self-hosted Ollama behind an authenticated tunnel).
+  const llmBaseUrl = String(options.llmBaseUrl ?? process.env.LLM_BASE_URL ?? "").replace(/\/+$/, "");
+  const useCompat = Boolean(llmBaseUrl);
+  const apiKey = useCompat
+    ? options.apiKey ?? process.env.LLM_API_KEY ?? ""
+    : options.apiKey ?? process.env.OPENAI_API_KEY ?? "";
+  const model = useCompat
+    ? options.model || process.env.LLM_MODEL || "gemma4:26b"
+    : options.model || process.env.OPENAI_MODEL || "gpt-5-mini";
+  const providerName = useCompat ? process.env.LLM_PROVIDER_NAME || "Ollama" : "OpenAI";
+  const requestTimeout = clamp(
+    Number(process.env.AI_TIMEOUT_MS) || (useCompat ? 180000 : 45000),
+    10000,
+    300000,
+  );
   const fetchImpl = options.fetchImpl || globalThis.fetch;
   const dailyCallLimit = clamp(
     Number(options.dailyCallLimit ?? process.env.MAX_DAILY_AI_CALLS) || 12,
@@ -1400,7 +1419,7 @@ export function createEngine(options = {}) {
         ).run(cacheKey, JSON.stringify(parsed));
         context.aiSuccesses++;
         current.runtime.mode = "ai";
-        current.runtime.provider = `OpenAI · ${model}`;
+        current.runtime.provider = `${providerName} · ${model}`;
         save();
         return parsed;
       } catch (error) {
@@ -1433,7 +1452,11 @@ export function createEngine(options = {}) {
     return null;
   }
   function recordTokens(usageValue) {
-    const used = usageValue || {};
+    const raw = usageValue || {};
+    const used = {
+      input_tokens: raw.input_tokens ?? raw.prompt_tokens,
+      output_tokens: raw.output_tokens ?? raw.completion_tokens,
+    };
     if (!used.input_tokens && !used.output_tokens) return;
     db.prepare(
       "INSERT INTO tokens(date,input,output) VALUES(?,?,?) ON CONFLICT(date) DO UPDATE SET input=input+excluded.input, output=output+excluded.output",
@@ -1451,8 +1474,33 @@ export function createEngine(options = {}) {
   }
   async function requestModel({ systemPrompt, input, maxOutput }) {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 45000);
+    const timeout = setTimeout(() => controller.abort(), requestTimeout);
     try {
+      if (useCompat) {
+        const response = await fetchImpl(`${llmBaseUrl}/chat/completions`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+          },
+          signal: controller.signal,
+          body: JSON.stringify({
+            model,
+            max_tokens: maxOutput,
+            reasoning_effort: "none",
+            response_format: { type: "json_object" },
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: JSON.stringify(input) },
+            ],
+          }),
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const payload = await response.json();
+        recordTokens(payload.usage);
+        const text = payload.choices?.[0]?.message?.content || "";
+        return JSON.parse(text.replace(/^```(?:json)?\s*|\s*```$/g, ""));
+      }
       const response = await fetchImpl("https://api.openai.com/v1/responses", {
         method: "POST",
         headers: {
@@ -1529,7 +1577,7 @@ export function createEngine(options = {}) {
           mode: "rules",
           provider:
             apiKey && context.kind !== "bootstrap"
-              ? "OpenAI yanıtı bekleniyor"
+              ? `${providerName} yanıtı bekleniyor`
               : "Şeffaf kurallar motoru",
           error: null,
         };
@@ -1736,7 +1784,7 @@ export function createEngine(options = {}) {
             context,
             o.agentId,
             "proposal",
-            `${availableStrategies().find((s) => s.id === o.strategyId).title}: ${o.proposal} Gerekçe: ${o.rationale} Çekince: ${o.risk} [${o.source === "ai" ? "OpenAI yanıtı" : "Kurallar motoru"}]`,
+            `${availableStrategies().find((s) => s.id === o.strategyId).title}: ${o.proposal} Gerekçe: ${o.rationale} Çekince: ${o.risk} [${o.source === "ai" ? `${providerName} yanıtı` : "Kurallar motoru"}]`,
           ),
         );
         current.agents.forEach((a) => {
@@ -2541,7 +2589,7 @@ export function createEngine(options = {}) {
           mode,
           provider:
             mode === "ai"
-              ? `OpenAI · ${model}${fallbacks.length ? " + kurallar desteği" : ""}`
+              ? `${providerName} · ${model}${fallbacks.length ? " + kurallar desteği" : ""}`
               : "Şeffaf kurallar motoru",
           status: current.config.autonomous ? "idle" : "paused",
           phase: "Mesai tamamlandı · Öğrenimler kaydedildi",
